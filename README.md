@@ -1,2 +1,2 @@
 # pokevolution-bot
-in-game help resource about evolution chains, using the PokéAPI
+handhelds in-game help resource about evolution chains and etc, using the PokéAPI
