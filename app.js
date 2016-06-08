@@ -96,3 +96,75 @@ controller.hears('game', 'message_received', function(bot, message) {
     }
   });
 });
+
+
+// WHICH POKEMON ?
+
+controller.hears(['^pokemon$', 'search'], 'message_received', function(bot, message) {
+  bot.startConversation(message, function(err, convo) {
+    if (!err && !userCurrentGame[message.user]) {
+      convo.ask('Which pokemon would you like to know more about? Say it\'s name or national pokedex entry number.', function(response, convo) {
+        var chosenPokemon = response.text;
+        // note to future self: make up for people entering things like '#025', 'number 25', 'pokemon no. 25', etc.
+        
+        var chosenPokemonId;
+        var chosenPokemonName;
+        
+        // checking if a name or an ID number was entered
+        if (chosenPokemon.match(/^[^0-9]+$/)) {
+          chosenPokemonName = chosenPokemon.toLowerCase();
+        } else if (chosenPokemon.match(/^[0-9]+$/)) {
+          chosenPokemonId = Number(chosenPokemon);
+        } else {
+          bot.reply(message, 'Sorry, I didn\'t understand...');
+        }
+        console.log(chosenPokemon)
+        console.log(chosenPokemonId)
+        console.log(chosenPokemonName)
+        
+        // finding the entry
+        if (chosenPokemonId || chosenPokemonName) {
+          request('https://pokeapi.co/api/v2/pokedex/1/', function (err, result) {
+            if (!err) {
+              var resultObject = JSON.parse(result.body);
+              var pokemon_entries = resultObject.pokemon_entries;
+              var foundPokemon;
+              
+              // if it's an ID...
+              if (chosenPokemonId) {
+                pokemon_entries.forEach(function(index) {
+                  var entry_number = index.entry_number;
+                  if (entry_number === chosenPokemonId) {
+                    foundPokemon = index.pokemon_species.url;
+                  }
+                });
+              } else if (chosenPokemonName) {
+                // do the same for a name
+              }
+              
+              if (foundPokemon) {
+                request(foundPokemon, function (err, result) {
+                  if (!err) {
+                    var resultObject = JSON.parse(result.body);
+                    
+                    bot.startConversation(message, function(err, convo) {
+                      if (!err) {
+                        convo.say('I have found : ' + resultObject.names[0].name);
+                        convo.say('National Pokedex entry no. : ' + resultObject.pokedex_numbers[(resultObject.pokedex_numbers.length -1)].entry_number);
+                        convo.say('Natural habitat : ' + resultObject.habitat.name);
+                        convo.say(resultObject.names[0].name + ' evolves from ' + resultObject.evolves_from_species.name);   // need to remove this line if null
+                        convo.say(resultObject.flavor_text_entries[1].flavor_text);
+                        
+                        // NOTE: current bug; can't do a second search. need to exit the flow
+                      }
+                    });
+                  }
+                });
+              }
+            }
+          });
+        }
+      });
+    }
+  });
+})
