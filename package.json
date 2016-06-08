@@ -1,0 +1,23 @@
+{
+  "name": "pokevolution-bot",
+  "version": "1.0.0",
+  "description": "pokemon in-game helper",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/poe21/pokevolution-bot.git"
+  },
+  "author": "Annie Durand",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/poe21/pokevolution-bot/issues"
+  },
+  "homepage": "https://github.com/poe21/pokevolution-bot#readme",
+  "dependencies": {
+    "botkit": "^0.2.0",
+    "request": "^2.72.0"
+  }
+}
