@@ -28,10 +28,11 @@ controller.hears(['hello', '^hi$', '^yo$', '^hey$', 'what\'s up'], 'message_rece
   }
 });
 
+
 // HELP SECTION
 controller.hears('^help$', 'message_received', function(bot, message) {
   bot.startConversation(message, function(err, convo) {
-    convo.say("I am a work in progress, please come back later!");
+    convo.say("I am a work in progress. Try saying 'pokemon'!");
   });
 });
 
@@ -116,11 +117,8 @@ controller.hears(['^pokemon$', 'search'], 'message_received', function(bot, mess
         } else if (chosenPokemon.match(/^[0-9]+$/)) {
           chosenPokemonId = Number(chosenPokemon);
         } else {
-          bot.reply(message, 'Sorry, I didn\'t understand...');
+          bot.reply(message, 'Sorry, I didn\'t understand... Please say a number OR a name.');
         }
-        console.log(chosenPokemon)
-        console.log(chosenPokemonId)
-        console.log(chosenPokemonName)
         
         // finding the entry
         if (chosenPokemonId || chosenPokemonName) {
@@ -139,7 +137,12 @@ controller.hears(['^pokemon$', 'search'], 'message_received', function(bot, mess
                   }
                 });
               } else if (chosenPokemonName) {
-                // do the same for a name
+                pokemon_entries.forEach(function(index) {
+                  var name = index.pokemon_species.name;
+                  if (name === chosenPokemonId) {
+                    foundPokemon = index.pokemon_species.url;
+                  }
+                });
               }
               
               if (foundPokemon) {
@@ -149,18 +152,22 @@ controller.hears(['^pokemon$', 'search'], 'message_received', function(bot, mess
                     
                     bot.startConversation(message, function(err, convo) {
                       if (!err) {
-                        convo.say('I have found : ' + resultObject.names[0].name);
-                        convo.say('National Pokedex entry no. : ' + resultObject.pokedex_numbers[(resultObject.pokedex_numbers.length -1)].entry_number);
-                        convo.say('Natural habitat : ' + resultObject.habitat.name);
-                        convo.say(resultObject.names[0].name + ' evolves from ' + resultObject.evolves_from_species.name);   // need to remove this line if null
+                        convo.say('I have found :');
+                        convo.say(resultObject.names[0].name + ', no. ' + resultObject.pokedex_numbers[(resultObject.pokedex_numbers.length -1)].entry_number);
+                        if (resultObject.habitat !== null) {
+                          convo.say('Natural habitat : ' + resultObject.habitat.name);
+                        }
+                        if (resultObject.evolves_from_species !== null) {
+                          convo.say('It evolves from ' + resultObject.evolves_from_species.name.charAt(0).toUpperCase() + resultObject.evolves_from_species.name.slice(1));
+                        }
                         convo.say(resultObject.flavor_text_entries[1].flavor_text);
-                        
-                        // NOTE: current bug; can't do a second search. need to exit the flow
                       }
                     });
                   }
                 });
               }
+            } else {
+              // catch error
             }
           });
         }
