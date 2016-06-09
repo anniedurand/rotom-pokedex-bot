@@ -22,7 +22,7 @@ var userFirstRun = {};
 controller.hears(['hello', '^hi$', '^yo$', '^hey$', 'what\'s up'], 'message_received', function(bot, message) {  // NOTE: Change dialog, add user nickname question linked with database
   if (!userFirstRun[message.user]) {
     userFirstRun[message.user] = 'done';
-    bot.reply(message, "Hey there. Nice to meet you! Try saying 'help'!");
+    bot.reply(message, "Hey there. Nice to meet you! Try saying 'pokemon'!");
   } else {
     bot.reply(message, 'Hello, nice to see you again!');
   }
@@ -236,7 +236,9 @@ function searchPokemon(bot, message) {
 
 controller.on('facebook_postback', function(bot, message) {
   if (message.payload === 'evolution-button') {
-    bot.reply(message, 'No problem, hold on a minute.');
+    bot.reply(message, 'Sorry, this area is still in construction :3');
+    return;
+    // bot.reply(message, 'No problem, hold on a minute.');
     // call evolution chain function
   } else if (message.payload === 'search') {
     searchPokemon(bot, message);
