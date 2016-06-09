@@ -101,10 +101,14 @@ controller.hears('game', 'message_received', function(bot, message) {
 
 // WHICH POKEMON ?
 
-controller.hears(['^pokemon$', 'search'], 'message_received', function(bot, message) {
+controller.hears(['^pokemon$', 'search'], 'message_received', searchPokemon);
+
+function searchPokemon(bot, message) {
   bot.startConversation(message, function(err, convo) {
-    if (!err && !userCurrentGame[message.user]) {
+    if (!err) {
       convo.ask('Which pokemon would you like to know more about? Say it\'s name or national pokedex entry number.', function(response, convo) {
+        bot.reply(message, 'Alright, please wait while I go through my files.');
+        
         var chosenPokemon = response.text;
         // note to future self: make up for people entering things like '#025', 'number 25', 'pokemon no. 25', etc.
         
@@ -136,42 +140,110 @@ controller.hears(['^pokemon$', 'search'], 'message_received', function(bot, mess
                     foundPokemon = index.pokemon_species.url;
                   }
                 });
-              } else if (chosenPokemonName) {
+              } else if (chosenPokemonName) {   // if it's a name
                 pokemon_entries.forEach(function(index) {
                   var name = index.pokemon_species.name;
-                  if (name === chosenPokemonId) {
+                  if (name === chosenPokemonName) {
                     foundPokemon = index.pokemon_species.url;
                   }
                 });
               }
               
+              console.log(chosenPokemonId)
+              console.log(chosenPokemonName)
+              console.log(foundPokemon)
+              
               if (foundPokemon) {
                 request(foundPokemon, function (err, result) {
                   if (!err) {
                     var resultObject = JSON.parse(result.body);
+                    var nationalDexNo = resultObject.pokedex_numbers[(resultObject.pokedex_numbers.length -1)].entry_number;
+                    var pokemonInfo;
                     
-                    bot.startConversation(message, function(err, convo) {
-                      if (!err) {
-                        convo.say('I have found :');
-                        convo.say(resultObject.names[0].name + ', no. ' + resultObject.pokedex_numbers[(resultObject.pokedex_numbers.length -1)].entry_number);
-                        if (resultObject.habitat !== null) {
-                          convo.say('Natural habitat : ' + resultObject.habitat.name);
+                    if (nationalDexNo) {
+                      request('https://pokeapi.co/api/v2/pokemon/' + nationalDexNo, function(err, result) {
+                        if (!err) {
+                          pokemonInfo = JSON.parse(result.body);
+                          var pokemonTypes = [];
+                          
+                          pokemonInfo.types.forEach(function(type) {
+                            pokemonTypes.push(type.type.name);
+                          });
+                          
+                          var attachment = {
+                            'type':'template',
+                            'payload':{
+                              'template_type':'generic',
+                              'elements':[
+                                {
+                                  'title': 'No. ' + nationalDexNo + ', ' + resultObject.names[0].name,
+                                  'image_url': pokemonInfo.sprites.front_default,
+                                  'subtitle': 'Type(s) : ' + pokemonTypes,
+                                  'buttons': [
+                                    {
+                                    'type':'postback',
+                                    'title':'See Evolution Chain',
+                                    'payload':'evolution-button'
+                                    },
+                                    {
+                                    'type':'postback',
+                                    'title':'Another search',
+                                    'payload':'search'
+                                    },
+                                    {
+                                    'type':'postback',
+                                    'title':'That will be all',
+                                    'payload':'thatsall-button'
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          };
+                          
+                          bot.startConversation(message, function(err, convo) {
+                            if (!err) {
+                              convo.say('I have found :');
+                              convo.say({attachment: attachment});
+                              return;
+                            }
+                          });
+                        } else {
+                          bot.reply(message, 'Sorry, I couldn\'t find the Pokémon that you requested.');
+                          return;
                         }
-                        if (resultObject.evolves_from_species !== null) {
-                          convo.say('It evolves from ' + resultObject.evolves_from_species.name.charAt(0).toUpperCase() + resultObject.evolves_from_species.name.slice(1));
-                        }
-                        convo.say(resultObject.flavor_text_entries[1].flavor_text);
-                      }
-                    });
+                      });
+                    } else {
+                      bot.reply(message, 'Sorry, I couldn\'t find the Pokémon that you requested.');
+                      return;
+                    } 
                   }
                 });
+              } else {
+                bot.reply(message, 'Sorry, I couldn\'t find the Pokémon that you requested.');
+                return;
               }
             } else {
               // catch error
             }
           });
         }
+        convo.stop();
       });
     }
   });
-})
+}
+
+controller.on('facebook_postback', function(bot, message) {
+  if (message.payload === 'evolution-button') {
+    bot.reply(message, 'No problem, hold on a minute.');
+    // call evolution chain function
+  } else if (message.payload === 'search') {
+    searchPokemon(bot, message);
+  } else if (message.payload === 'thatsall-button') {
+    bot.reply(message, 'Ok, tell me if you need my help again!');
+    return;
+  }
+});
+
+// create evolution chain function
