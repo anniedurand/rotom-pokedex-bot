@@ -101,6 +101,8 @@ controller.hears('game', 'message_received', function(bot, message) {
 
 // WHICH POKEMON ?
 
+var userCurrentPokemonChain = {};
+
 controller.hears(['^pokemon$', 'search'], 'message_received', searchPokemon);
 
 function searchPokemon(bot, message) {
@@ -159,6 +161,7 @@ function searchPokemon(bot, message) {
                     var resultObject = JSON.parse(result.body);
                     var nationalDexNo = resultObject.pokedex_numbers[(resultObject.pokedex_numbers.length -1)].entry_number;
                     var pokemonInfo;
+                    userCurrentPokemonChain[message.user] = resultObject.evolution_chain.url;
                     
                     if (nationalDexNo) {
                       request('https://pokeapi.co/api/v2/pokemon/' + nationalDexNo, function(err, result) {
@@ -236,9 +239,11 @@ function searchPokemon(bot, message) {
 
 controller.on('facebook_postback', function(bot, message) {
   if (message.payload === 'evolution-button') {
-    bot.reply(message, 'Sorry, this area is still in construction :3');
-    return;
-    // bot.reply(message, 'No problem, hold on a minute.');
+    // bot.reply(message, 'Sorry, this area is still in construction :3');
+    // return;
+    bot.reply(message, 'No problem, hold on a second!');
+    evolutionChain(bot, message);
+    
     // call evolution chain function
   } else if (message.payload === 'search') {
     searchPokemon(bot, message);
@@ -249,3 +254,16 @@ controller.on('facebook_postback', function(bot, message) {
 });
 
 // create evolution chain function
+
+function evolutionChain(bot, message) {
+  request(userCurrentPokemonChain[message.user], function (err, result) {
+    if (!err) {
+      var evolutionInfos = JSON.parse(result.body);
+      bot.startConversation(message, function(err, convo) {
+        convo.say('This pokemon evolution chain starts with ' + evolutionInfos.chain.species.name.charAt(0).toUpperCase() + evolutionInfos.chain.species.name.slice(1));
+        convo.say('Followed by ' + evolutionInfos.chain.evolves_to[0].species.name.charAt(0).toUpperCase() + evolutionInfos.chain.evolves_to[0].species.name.slice(1));
+        convo.say('And finally ' + evolutionInfos.chain.evolves_to[0].evolves_to[0].species.name.charAt(0).toUpperCase() + evolutionInfos.chain.evolves_to[0].evolves_to[0].species.name.slice(1));
+      });
+    }
+  });
+}
