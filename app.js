@@ -16,15 +16,47 @@ controller.setupWebserver(process.env.PORT, function(err,webserver) {
   });
 });
 
+
+var mainMenu = {
+  'type':'template',
+  'payload':{
+    'template_type':'generic',
+    'elements':[
+      {
+        'title': 'What can I help you with?',
+        'buttons': [
+          {
+          'type':'postback',
+          'title':'Search for a Pokémon',
+          'payload':'search'
+          },
+          {
+          'type':'postback',
+          'title':'That\'s all for now',
+          'payload':'thatsall-button'
+          }
+        ]
+      }
+    ]
+  }
+};
+
+
 var userFirstRun = {};
 
 // user said hello
 controller.hears(['hello', '^hi$', '^yo$', '^hey$', 'what\'s up'], 'message_received', function(bot, message) {  // NOTE: Change dialog, add user nickname question linked with database
   if (!userFirstRun[message.user]) {
     userFirstRun[message.user] = 'done';
-    bot.reply(message, "Hey there. Nice to meet you! Try saying 'pokemon'!");
+    bot.startConversation(message, function(err, convo) {
+      convo.say('Hey there. Nice to meet you!');
+      convo.say({attachment: mainMenu});
+    });
   } else {
-    bot.reply(message, 'Hello, nice to see you again!');
+    bot.startConversation(message, function(err, convo) {
+      convo.say('Hello, nice to see you again!');
+      convo.say({attachment: mainMenu});
+    });
   }
 });
 
@@ -32,7 +64,7 @@ controller.hears(['hello', '^hi$', '^yo$', '^hey$', 'what\'s up'], 'message_rece
 // HELP SECTION
 controller.hears('^help$', 'message_received', function(bot, message) {
   bot.startConversation(message, function(err, convo) {
-    convo.say("I am a work in progress. Try saying 'pokemon'!");
+    convo.say('I am a work in progress. Try saying "pokemon" or "hi"!');
   });
 });
 
@@ -102,13 +134,14 @@ controller.hears('game', 'message_received', function(bot, message) {
 // WHICH POKEMON ?
 
 var userCurrentPokemonChain = {};
+var userCurrentPokemonName = {};
 
 controller.hears(['^pokemon$', 'search'], 'message_received', searchPokemon);
 
 function searchPokemon(bot, message) {
   bot.startConversation(message, function(err, convo) {
     if (!err) {
-      convo.ask('Which pokemon would you like to know more about? Say it\'s name or national pokedex entry number.', function(response, convo) {
+      convo.ask('Which Pokémon would you like to know more about? Say it\'s name or national pokedex entry number.', function(response, convo) {
         bot.reply(message, 'Alright, please wait while I go through my files.');
         
         var chosenPokemon = response.text;
@@ -162,6 +195,7 @@ function searchPokemon(bot, message) {
                     var nationalDexNo = resultObject.pokedex_numbers[(resultObject.pokedex_numbers.length -1)].entry_number;
                     var pokemonInfo;
                     userCurrentPokemonChain[message.user] = resultObject.evolution_chain.url;
+                    userCurrentPokemonName[message.user] = resultObject.names[0].name;
                     
                     if (nationalDexNo) {
                       request('https://pokeapi.co/api/v2/pokemon/' + nationalDexNo, function(err, result) {
@@ -239,31 +273,145 @@ function searchPokemon(bot, message) {
 
 controller.on('facebook_postback', function(bot, message) {
   if (message.payload === 'evolution-button') {
-    // bot.reply(message, 'Sorry, this area is still in construction :3');
-    // return;
     bot.reply(message, 'No problem, hold on a second!');
     evolutionChain(bot, message);
-    
-    // call evolution chain function
-  } else if (message.payload === 'search') {
+  } 
+  else if (message.payload === 'search') {
     searchPokemon(bot, message);
-  } else if (message.payload === 'thatsall-button') {
+  } 
+  else if (message.payload === 'thatsall-button') {
     bot.reply(message, 'Ok, tell me if you need my help again!');
     return;
   }
 });
-
-// create evolution chain function
 
 function evolutionChain(bot, message) {
   request(userCurrentPokemonChain[message.user], function (err, result) {
     if (!err) {
       var evolutionInfos = JSON.parse(result.body);
       bot.startConversation(message, function(err, convo) {
-        convo.say('This pokemon evolution chain starts with ' + evolutionInfos.chain.species.name.charAt(0).toUpperCase() + evolutionInfos.chain.species.name.slice(1));
-        convo.say('Followed by ' + evolutionInfos.chain.evolves_to[0].species.name.charAt(0).toUpperCase() + evolutionInfos.chain.evolves_to[0].species.name.slice(1));
-        convo.say('And finally ' + evolutionInfos.chain.evolves_to[0].evolves_to[0].species.name.charAt(0).toUpperCase() + evolutionInfos.chain.evolves_to[0].evolves_to[0].species.name.slice(1));
+        var current = userCurrentPokemonName[message.user].toLowerCase();
+        
+        if (evolutionInfos.chain.species.name === current && evolutionInfos.chain.evolves_to.length !== 0) {
+          var evolved = capitalizeFirst(evolutionInfos.chain.evolves_to[0].species.name);
+          var levelOne = evolutionInfos.chain.evolves_to[0].evolution_details[0];
+          sayEvolutionInfos(convo, levelOne, current, evolved, evolutionInfos);
+          convo.say({attachment: mainMenu});
+        } 
+        else if (evolutionInfos.chain.species.name === current && evolutionInfos.chain.evolves_to.length === 0) {
+          convo.say('Your Pokémon is at it\'s final evolution stage.');
+          convo.say({attachment: mainMenu});
+        } 
+        else if (evolutionInfos.chain.evolves_to[0].species.name === current && evolutionInfos.chain.evolves_to[0].evolves_to.length !== 0) {
+          var evolved = capitalizeFirst(evolutionInfos.chain.evolves_to[0].evolves_to[0].species.name);
+          var levelTwo = evolutionInfos.chain.evolves_to[0].evolves_to[0].evolution_details[0];
+          sayEvolutionInfos(convo, levelTwo, current, evolved, evolutionInfos);
+          convo.say({attachment: mainMenu});
+        } 
+        else if (evolutionInfos.chain.evolves_to[0].species.name === current && evolutionInfos.chain.evolves_to[0].evolves_to.length === 0) {
+          convo.say('Your Pokémon is at it\'s final evolution stage.');
+          convo.say({attachment: mainMenu});
+        } 
+        else if (evolutionInfos.chain.evolves_to[0].evolves_to[0].species.name === current) {
+          convo.say('Your Pokémon is at it\'s final evolution stage.');
+          convo.say({attachment: mainMenu});
+        }
       });
     }
   });
 }
+
+function capitalizeFirst(pokemonName) {
+  return pokemonName.charAt(0).toUpperCase() + pokemonName.slice(1);
+}
+
+function splitJoin(sentence) {
+  return sentence.split('-').join(' ');
+}
+
+function trigger(triggerType, evolLevel) {
+  if (triggerType === 'level-up') {
+    return ' by leveling up:'; 
+  } else if (triggerType === 'trade') {
+    return ' after being traded with another player:';
+  } else if (triggerType === 'use-item') {
+    return ' by being exposed to: ' + splitJoin(evolLevel.item.name) + ':';
+  } else if (triggerType === 'shed') {
+    return ' by shedding (?):'; // ? change this  
+  }
+}
+
+function sayEvolutionInfos(convo, evolLevel, current, evolved, evolutionInfos) {
+  convo.say(capitalizeFirst(current) + ' evolves to ' + evolved + trigger(evolLevel.trigger.name, evolLevel));
+
+  if (evolLevel.min_level) {
+    convo.say('• at level ' + evolLevel.min_level);
+  }
+  if (evolLevel.min_beauty) {
+    convo.say('• min. beauty level: ' + evolLevel.min_beauty);  // ?
+  }
+  if (evolLevel.time_of_day.length > 1) {
+    convo.say('• during the ' + evolLevel.time_of_day);  // ?
+  }
+  if (evolLevel.gender) {
+    convo.say('• it\'s gender must be: ' + evolLevel.gender);  // ?
+  }
+  if (evolLevel.relative_physical_stats) {
+    convo.say('• phys. stats: ' + evolLevel.relative_physical_stats); // ?
+  }
+  if (evolLevel.needs_overworld_rain) {
+    convo.say('• it has to be raining in the overworld');
+  }
+  if (evolLevel.turn_upside_down) {
+    convo.say('• you have to turn your 3DS upside down');  // ?
+  }
+  if (evolLevel.item) {
+    convo.say('• using this item: ' + splitJoin(evolLevel.item.name));  // might not be needed if only comes up with item evolution trigger
+  }
+  if (evolLevel.known_move_type) {
+    convo.say('• your Pokémon must know the move type: ' + splitJoin(evolLevel.known_move_type.name));  // ?
+  }
+  if (evolLevel.min_affection) {
+    convo.say('• min. affection level: ' + evolLevel.min_affection);  // ?
+  }
+  if (evolLevel.party_type) {
+    convo.say('• party type: ' + evolLevel.party_type);  // ?
+  }
+  if (evolLevel.trade_species) {
+    convo.say('• trade_species: ' + evolLevel.trade_species); // ?
+  }
+  if (evolLevel.party_species) {
+    convo.say('• while having a ' + capitalizeFirst(evolLevel.party_species.name) + ' in your party.');
+  }
+  if (evolLevel.min_happiness) {
+    convo.say('• min. happiness level: ' + evolLevel.min_happiness);  // ?
+  }
+  if (evolLevel.held_item) {
+    convo.say('• while holding: ' + splitJoin(evolLevel.held_item.name)); // ?
+  }
+  if (evolLevel.known_move) {
+    convo.say('• your Pokémon must know the move: ' + splitJoin(evolLevel.known_move.name));  //
+  }
+  if (evolLevel.location) {
+    convo.say('• location: ' + evolLevel.location);  // ?
+  }
+  
+  // call new choice menu : do another search, stop, etc.
+}
+
+
+
+// NOTES for later
+
+// var second;
+// var third;
+
+// convo.say('This Pokémon evolution chain starts with ' + capitalizeFirst(evolutionInfos.chain.species.name));
+// if (evolutionInfos.chain.evolves_to[0].species.name !== null) {
+//   second = capitalizeFirst(evolutionInfos.chain.evolves_to[0].species.name);
+//   convo.say('Followed by ' + second);
+// }
+// if (evolutionInfos.chain.evolves_to[0].evolves_to[0].species.name !== null) {
+//   third = capitalizeFirst(evolutionInfos.chain.evolves_to[0].evolves_to[0].species.name);
+//   convo.say('And finally ' + third);
+// }
