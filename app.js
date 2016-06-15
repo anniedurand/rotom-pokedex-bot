@@ -139,7 +139,7 @@ function searchPokemon(bot, message) {
   bot.startConversation(message, function(err, convo) {
     if (!err) {
       convo.ask('Which Pokémon would you like to know more about? Say it\'s name or national pokedex entry number.', function(response, convo) {
-        bot.reply(message, 'Alright, please wait while I go through my files.');
+        bot.reply(message, 'Alright, please wait while I look through my files.');
         
         var chosenPokemon = response.text;
         // note to future self: make up for people entering things like '#025', 'number 25', 'pokemon no. 25', etc.
@@ -185,7 +185,7 @@ function searchPokemon(bot, message) {
               }
               
               if (foundPokemon === null) {
-                bot.reply(message, 'Pokemon not found');
+                bot.reply(message, 'Sorry, I couldn\'t find the Pokémon that you requested.');
               }
               
               console.log(chosenPokemonId)
@@ -213,6 +213,10 @@ function displayFoundPokemon(bot, message, foundPokemon, pokemonName) {
         request('https://pokeapi.co/api/v2/pokemon/' + nationalDexNo, function(err, result) {
           if (!err) {
             var displayName = resultObject.names[0].name;
+            var isBaby = '';
+            if (resultObject.is_baby === true) {
+              isBaby = ' [baby]';
+            }
             var pokemonInfo = JSON.parse(result.body);
             var pokemonTypes = [];
             
@@ -226,7 +230,7 @@ function displayFoundPokemon(bot, message, foundPokemon, pokemonName) {
                 'template_type':'generic',
                 'elements':[
                   {
-                    'title': 'No. ' + nationalDexNo + ', ' + displayName,
+                    'title': 'No. ' + nationalDexNo + ', ' + displayName + isBaby,
                     'image_url': pokemonInfo.sprites.front_default,
                     'subtitle': 'Type(s) : ' + pokemonTypes,
                     'buttons': [
@@ -253,8 +257,9 @@ function displayFoundPokemon(bot, message, foundPokemon, pokemonName) {
             
             bot.startConversation(message, function(err, convo) {
               if (!err) {
+                convo.say('I have found:');
                 convo.say({attachment: attachment});
-                return;
+                // return;
               }
             });
           } else {
