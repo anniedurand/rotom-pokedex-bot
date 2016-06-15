@@ -348,60 +348,63 @@ function trigger(triggerType, evolLevel) {
 }
 
 function sayEvolutionInfos(convo, evolLevel, current, evolved, evolutionInfos) {
-  convo.say(capitalizeFirst(current) + ' evolves to ' + evolved + trigger(evolLevel.trigger.name, evolLevel));
-
+  var conditions = '';
+  
   if (evolLevel.min_level) {
-    convo.say('• at level ' + evolLevel.min_level);
+    conditions += '\n• at level ' + evolLevel.min_level;
   }
   if (evolLevel.min_beauty) {
-    convo.say('• min. beauty level: ' + evolLevel.min_beauty);  // ?
+    conditions += '\n• min. beauty level: ' + evolLevel.min_beauty;  // verify
   }
   if (evolLevel.time_of_day.length > 1) {
-    convo.say('• during the ' + evolLevel.time_of_day);
+    conditions += '\n• during the ' + evolLevel.time_of_day;
   }
   if (evolLevel.gender) {
-    convo.say('• it\'s gender must be: ' + evolLevel.gender);  // ?
+    conditions += '\n• it\'s gender must be: ' + evolLevel.gender;  // verify
   }
   if (evolLevel.relative_physical_stats) {
-    convo.say('• phys. stats: ' + evolLevel.relative_physical_stats); // ?
+    conditions += '\n• phys. stats: ' + evolLevel.relative_physical_stats; // verify
   }
   if (evolLevel.needs_overworld_rain) {
-    convo.say('• while it\'s raining in the overworld');
+    conditions += '\n• while it\'s raining in the overworld';
   }
   if (evolLevel.turn_upside_down) {
-    convo.say('• you have to turn your 3DS upside down');  // ?
+    conditions += '\n• you have to turn your 3DS upside down';  // verify
   }
   // if (evolLevel.item) {
-  //   convo.say('• using this item: ' + splitJoin(evolLevel.item.name));  // might not be needed if only comes up with item evolution trigger
+  //   conditions += '\n• using this item: ' + splitJoin(evolLevel.item.name);  // might not be needed if only comes up with item evolution trigger
   // }
   if (evolLevel.known_move_type) {
-    convo.say('• while knowing a ' + splitJoin(evolLevel.known_move_type.name) + '-type move');
+    conditions += '\n• while knowing a ' + splitJoin(evolLevel.known_move_type.name) + '-type move';
   }
   if (evolLevel.min_affection) {
-    convo.say('• while having at least ' + evolLevel.min_affection + ' affection hearts in Pokémon-Amie');
+    conditions += '\n• while having at least ' + evolLevel.min_affection + ' affection hearts in Pokémon-Amie';
   }
   if (evolLevel.party_type) {
-    convo.say('• party type: ' + evolLevel.party_type);  // ?
+    conditions += '\n• party type: ' + evolLevel.party_type;  // verify
   }
   if (evolLevel.trade_species) {
-    convo.say('• trade_species: ' + evolLevel.trade_species); // ?
+    conditions += '\n• trade_species: ' + evolLevel.trade_species; // verify
   }
   if (evolLevel.party_species) {
-    convo.say('• while having a ' + capitalizeFirst(evolLevel.party_species.name) + ' in your party');
+    conditions += '\n• while having a ' + capitalizeFirst(evolLevel.party_species.name) + ' in your party';
   }
   if (evolLevel.min_happiness) {
-    convo.say('• min. happiness level: ' + evolLevel.min_happiness);  // ?
+    conditions += '\n• min. happiness level: ' + evolLevel.min_happiness;  // verify
   }
   if (evolLevel.held_item) {
-    convo.say('• while holding: ' + splitJoin(evolLevel.held_item.name)); // ?
+    conditions += '\n• while holding: ' + splitJoin(evolLevel.held_item.name); // verify
   }
   if (evolLevel.known_move) {
-    convo.say('• while knowing the move: ' + splitJoin(evolLevel.known_move.name)); 
+    conditions += '\n• while knowing the move: ' + splitJoin(evolLevel.known_move.name); 
   }
   if (evolLevel.location) {
-    convo.say('• while being near: ' + splitJoin(evolLevel.location.name));  // see for example eevee to leafeon or glaceon evolution, fix the results.
+    conditions += '\n• while being near: ' + splitJoin(evolLevel.location.name);  // see for example eevee to leafeon or glaceon evolution, fix the results.
   }
-  // find a nice separator (for multiple evolutions like Eevee)
+  
+  convo.say(capitalizeFirst(current) + ' evolves to ' + evolved + trigger(evolLevel.trigger.name, evolLevel) + conditions);
+  
+  // find a nice separator (for multiple evolutions like Eevee).... stars ? '\u2606'
 }
 
 
