@@ -152,7 +152,7 @@ function searchPokemon(bot, message) {
         
         // checking if a name or an ID number was entered
         if (chosenPokemon.match(/^[^0-9]+$/)) {
-          chosenPokemonName = chosenPokemon.toLowerCase();
+          chosenPokemonName = reverseSplitJoin(chosenPokemon.toLowerCase());
         } else if (chosenPokemon.match(/^[0-9]+$/)) {
           chosenPokemonId = Number(chosenPokemon);
         } else {
@@ -179,6 +179,7 @@ function searchPokemon(bot, message) {
                 pokemon_entries.forEach(function(index) {
                   var name = index.pokemon_species.name;
                   if (name === chosenPokemonName) {
+                    userCurrentPokemonName[message.user] = name;
                     foundPokemon = index.pokemon_species.url;
                   }
                 });
@@ -195,7 +196,6 @@ function searchPokemon(bot, message) {
                     var nationalDexNo = resultObject.pokedex_numbers[(resultObject.pokedex_numbers.length -1)].entry_number;
                     var pokemonInfo;
                     userCurrentPokemonChain[message.user] = resultObject.evolution_chain.url;
-                    userCurrentPokemonName[message.user] = resultObject.names[0].name;
                     
                     if (nationalDexNo) {
                       request('https://pokeapi.co/api/v2/pokemon/' + nationalDexNo, function(err, result) {
@@ -290,7 +290,8 @@ function evolutionChain(bot, message) {
     if (!err) {
       var evolutionInfos = JSON.parse(result.body);
       bot.startConversation(message, function(err, convo) {
-        var current = userCurrentPokemonName[message.user].toLowerCase();
+        var current = reverseSplitJoin(userCurrentPokemonName[message.user].toLowerCase());
+        console.log(current)
         
         if (evolutionInfos.chain.species.name === current && evolutionInfos.chain.evolves_to.length !== 0) {
           var evoLevelOneArray = evolutionInfos.chain.evolves_to;
@@ -333,6 +334,10 @@ function capitalizeFirst(pokemonName) {
 
 function splitJoin(sentence) {
   return sentence.split('-').join(' ');
+}
+
+function reverseSplitJoin(sentence) {
+  return sentence.split(' ').join('-');
 }
 
 function trigger(triggerType, evolLevel) {
