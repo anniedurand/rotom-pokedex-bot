@@ -219,17 +219,17 @@ function searchPokemon(bot, message) {
                                   'buttons': [
                                     {
                                     'type':'postback',
-                                    'title':'See Evolution Chain',
+                                    'title':'See evolution chain',
                                     'payload':'evolution-button'
                                     },
                                     {
                                     'type':'postback',
-                                    'title':'Another search',
+                                    'title':'Search for a Pokémon',
                                     'payload':'search'
                                     },
                                     {
                                     'type':'postback',
-                                    'title':'That will be all',
+                                    'title':'That\'s all for now',
                                     'payload':'thatsall-button'
                                     }
                                   ]
@@ -293,9 +293,12 @@ function evolutionChain(bot, message) {
         var current = userCurrentPokemonName[message.user].toLowerCase();
         
         if (evolutionInfos.chain.species.name === current && evolutionInfos.chain.evolves_to.length !== 0) {
-          var evolved = capitalizeFirst(evolutionInfos.chain.evolves_to[0].species.name);
-          var levelOne = evolutionInfos.chain.evolves_to[0].evolution_details[0];
-          sayEvolutionInfos(convo, levelOne, current, evolved, evolutionInfos);
+          var evoLevelOneArray = evolutionInfos.chain.evolves_to;
+          evoLevelOneArray.forEach(function(pokemon) {
+            var evolved = capitalizeFirst(pokemon.species.name);
+            var levelOne = pokemon.evolution_details[0];  // verify length; is there possibly more than 1?
+            sayEvolutionInfos(convo, levelOne, current, evolved, evolutionInfos);
+          });
           convo.say({attachment: mainMenu});
         } 
         else if (evolutionInfos.chain.species.name === current && evolutionInfos.chain.evolves_to.length === 0) {
@@ -303,9 +306,12 @@ function evolutionChain(bot, message) {
           convo.say({attachment: mainMenu});
         } 
         else if (evolutionInfos.chain.evolves_to[0].species.name === current && evolutionInfos.chain.evolves_to[0].evolves_to.length !== 0) {
-          var evolved = capitalizeFirst(evolutionInfos.chain.evolves_to[0].evolves_to[0].species.name);
-          var levelTwo = evolutionInfos.chain.evolves_to[0].evolves_to[0].evolution_details[0];
-          sayEvolutionInfos(convo, levelTwo, current, evolved, evolutionInfos);
+          var evoLevelTwoArray = evolutionInfos.chain.evolves_to[0].evolves_to;
+          evoLevelTwoArray.forEach(function(pokemon) {
+            var evolved = capitalizeFirst(pokemon.species.name);
+            var levelTwo = pokemon.evolution_details[0];  // verify length; is there possibly more than 1?
+            sayEvolutionInfos(convo, levelTwo, current, evolved, evolutionInfos);
+          });
           convo.say({attachment: mainMenu});
         } 
         else if (evolutionInfos.chain.evolves_to[0].species.name === current && evolutionInfos.chain.evolves_to[0].evolves_to.length === 0) {
@@ -335,7 +341,7 @@ function trigger(triggerType, evolLevel) {
   } else if (triggerType === 'trade') {
     return ' after being traded with another player:';
   } else if (triggerType === 'use-item') {
-    return ' by being exposed to: ' + splitJoin(evolLevel.item.name) + ':';
+    return ' by being exposed to: ' + splitJoin(evolLevel.item.name) + '.';
   } else if (triggerType === 'shed') {
     return ' by shedding (?):'; // ? change this  
   }
@@ -351,7 +357,7 @@ function sayEvolutionInfos(convo, evolLevel, current, evolved, evolutionInfos) {
     convo.say('• min. beauty level: ' + evolLevel.min_beauty);  // ?
   }
   if (evolLevel.time_of_day.length > 1) {
-    convo.say('• during the ' + evolLevel.time_of_day);  // ?
+    convo.say('• during the ' + evolLevel.time_of_day);
   }
   if (evolLevel.gender) {
     convo.say('• it\'s gender must be: ' + evolLevel.gender);  // ?
@@ -360,19 +366,19 @@ function sayEvolutionInfos(convo, evolLevel, current, evolved, evolutionInfos) {
     convo.say('• phys. stats: ' + evolLevel.relative_physical_stats); // ?
   }
   if (evolLevel.needs_overworld_rain) {
-    convo.say('• it has to be raining in the overworld');
+    convo.say('• while it\'s raining in the overworld');
   }
   if (evolLevel.turn_upside_down) {
     convo.say('• you have to turn your 3DS upside down');  // ?
   }
-  if (evolLevel.item) {
-    convo.say('• using this item: ' + splitJoin(evolLevel.item.name));  // might not be needed if only comes up with item evolution trigger
-  }
+  // if (evolLevel.item) {
+  //   convo.say('• using this item: ' + splitJoin(evolLevel.item.name));  // might not be needed if only comes up with item evolution trigger
+  // }
   if (evolLevel.known_move_type) {
-    convo.say('• your Pokémon must know the move type: ' + splitJoin(evolLevel.known_move_type.name));  // ?
+    convo.say('• while knowing a ' + splitJoin(evolLevel.known_move_type.name) + '-type move');
   }
   if (evolLevel.min_affection) {
-    convo.say('• min. affection level: ' + evolLevel.min_affection);  // ?
+    convo.say('• while having at least ' + evolLevel.min_affection + ' affection hearts in Pokémon-Amie');
   }
   if (evolLevel.party_type) {
     convo.say('• party type: ' + evolLevel.party_type);  // ?
@@ -381,7 +387,7 @@ function sayEvolutionInfos(convo, evolLevel, current, evolved, evolutionInfos) {
     convo.say('• trade_species: ' + evolLevel.trade_species); // ?
   }
   if (evolLevel.party_species) {
-    convo.say('• while having a ' + capitalizeFirst(evolLevel.party_species.name) + ' in your party.');
+    convo.say('• while having a ' + capitalizeFirst(evolLevel.party_species.name) + ' in your party');
   }
   if (evolLevel.min_happiness) {
     convo.say('• min. happiness level: ' + evolLevel.min_happiness);  // ?
@@ -390,13 +396,12 @@ function sayEvolutionInfos(convo, evolLevel, current, evolved, evolutionInfos) {
     convo.say('• while holding: ' + splitJoin(evolLevel.held_item.name)); // ?
   }
   if (evolLevel.known_move) {
-    convo.say('• your Pokémon must know the move: ' + splitJoin(evolLevel.known_move.name));  //
+    convo.say('• while knowing the move: ' + splitJoin(evolLevel.known_move.name)); 
   }
   if (evolLevel.location) {
-    convo.say('• location: ' + evolLevel.location);  // ?
+    convo.say('• while being near: ' + splitJoin(evolLevel.location.name));  // see for example eevee to leafeon or glaceon evolution, fix the results.
   }
-  
-  // call new choice menu : do another search, stop, etc.
+  // find a nice separator (for multiple evolutions like Eevee)
 }
 
 
