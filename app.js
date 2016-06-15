@@ -443,9 +443,9 @@ function sayEvolutionInfos(convo, details, current, evolved, evolutionInfos, dis
   if (details.turn_upside_down) {
     conditions += '\n• you have to turn your 3DS upside down';  // verify
   }
-  // if (details.item) {
-  //   conditions += '\n• using this item: ' + splitJoin(details.item.name);  // might not be needed if only comes up with item evolution trigger
-  // }
+  if (details.item) {
+    conditions += '\n• using this item: ' + splitJoin(details.item.name);  // might not be needed if only comes up with item evolution trigger
+  }
   if (details.known_move_type) {
     conditions += '\n• while knowing a ' + splitJoin(details.known_move_type.name) + '-type move';
   }
@@ -471,27 +471,19 @@ function sayEvolutionInfos(convo, details, current, evolved, evolutionInfos, dis
     conditions += '\n• while knowing the move: ' + capitalizeFirst(splitJoin(details.known_move.name)); 
   }
   if (details.location) {
-    conditions += '\n• while being near: ' + splitJoin(details.location.name);  // see for example eevee to leafeon or glaceon evolution, fix the results.
+    var pokemonLocation = '';
+    if (details.location.name === 'sinnoh-route-217') {
+      pokemonLocation = '\nan Ice Rock (more info: \nhttp://goo.gl/LnSHVd)';
+    } else if (details.location.name === 'eterna-forest') {
+      pokemonLocation = '\na Moss Rock (more info: \nhttp://goo.gl/oSS3g)';
+    } else {
+      pokemonLocation = capitalizeFirst(splitJoin(details.location.name));
+    }
+    console.log(pokemonLocation)
+    conditions += '\n• while being near: ' + pokemonLocation;  // see if other fixes needed.
   }
   
   convo.say(displayName + ' evolves to ' + evolved + trigger(details.trigger.name, details) + conditions);
   
   // find a nice separator (for multiple evolutions like Eevee).... stars ? '\u2606'
 }
-
-
-
-// NOTES for later
-
-// var second;
-// var third;
-
-// convo.say('This Pokémon evolution chain starts with ' + capitalizeFirst(evolutionInfos.chain.species.name));
-// if (evolutionInfos.chain.evolves_to[0].species.name !== null) {
-//   second = capitalizeFirst(evolutionInfos.chain.evolves_to[0].species.name);
-//   convo.say('Followed by ' + second);
-// }
-// if (evolutionInfos.chain.evolves_to[0].evolves_to[0].species.name !== null) {
-//   third = capitalizeFirst(evolutionInfos.chain.evolves_to[0].evolves_to[0].species.name);
-//   convo.say('And finally ' + third);
-// }
