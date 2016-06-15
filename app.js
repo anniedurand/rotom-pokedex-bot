@@ -16,7 +16,7 @@ controller.setupWebserver(process.env.PORT, function(err,webserver) {
   });
 });
 
-
+// MENUS
 var mainMenu = {
   'type':'template',
   'payload':{
@@ -32,6 +32,40 @@ var mainMenu = {
           },
           {
           'type':'postback',
+          'title':'Search for a type',
+          'payload':'search-type'
+          },
+          {
+          'type':'postback',
+          'title':'More options',
+          'payload':'moreoptions-button'
+          }
+        ]
+      }
+    ]
+  }
+};
+
+var mainMenuNext = {
+  'type':'template',
+  'payload':{
+    'template_type':'generic',
+    'elements':[
+      {
+        'title': 'What can I help you with?',
+        'buttons': [
+          {
+          'type':'postback',
+          'title':'Choose my Pokédex',
+          'payload':'set-pokedex'
+          },
+          {
+          'type':'postback',
+          'title':'Help section',
+          'payload':'help'
+          },
+          {
+          'type':'postback',
           'title':'That\'s all for now',
           'payload':'thatsall-button'
           }
@@ -41,6 +75,71 @@ var mainMenu = {
   }
 };
 
+var newSearchMenu = {
+  'type':'template',
+  'payload':{
+    'template_type':'generic',
+    'elements':[
+      {
+        'title': 'Would you like to do another search?',
+        'buttons': [
+          {
+          'type':'postback',
+          'title':'Search for a Pokémon',
+          'payload':'search'
+          },
+          {
+          'type':'postback',
+          'title':'See main menu',
+          'payload':'mainmenu-button'
+          },
+          {
+          'type':'postback',
+          'title':'That\'s all for now',
+          'payload':'thatsall-button'
+          }
+        ]
+      }
+    ]
+  }
+};
+
+// MENUS HANDLER
+controller.on('facebook_postback', function(bot, message) {
+  var messageSplit = message.payload.split('*');
+  var onButtonPress = messageSplit[0];
+  
+  if (messageSplit.length > 1) {
+    var pokemonName = messageSplit[1];
+    var pokemonChainUrl = messageSplit[2];
+    var displayName = messageSplit[3];
+  }
+  
+  if (onButtonPress === 'evolution-button') {
+    bot.reply(message, 'No problem, hold on a second!');
+    evolutionChain(bot, message, pokemonName, pokemonChainUrl, displayName);
+  } 
+  else if (onButtonPress === 'search') {
+    searchPokemon(bot, message);
+  } 
+  else if (onButtonPress === 'thatsall-button') {
+    bot.reply(message, 'Ok, tell me if you need my help again!');
+    return;
+  } else if (onButtonPress === 'mainmenu-button') {
+    bot.reply(message, {attachment: mainMenu});
+  } else if (onButtonPress === 'moreoptions-button') {
+    bot.reply(message, {attachment: mainMenuNext});
+  } else if (onButtonPress === 'search-type') {
+    bot.reply(message, 'Sorry, this area is in construction')
+    // call type function
+  } else if (onButtonPress === 'set-pokedex') {
+    bot.reply(message, 'Sorry, this area is in construction')
+    // call pokedex function
+  } else if (onButtonPress === 'help') {
+    bot.reply(message, 'Sorry, this area is in construction')
+    // call help function
+  }
+});
 
 var userFirstRun = {};
 
@@ -185,7 +284,10 @@ function searchPokemon(bot, message) {
               }
               
               if (foundPokemon === null) {
-                bot.reply(message, 'Sorry, I couldn\'t find the Pokémon that you requested.');
+                bot.startConversation(message, function(err, convo) {
+                  convo.say('Sorry, I couldn\'t find the Pokémon that you requested.');
+                  convo.say({attachment: mainMenu});
+                });
               }
               
               console.log(chosenPokemonId)
@@ -263,40 +365,21 @@ function displayFoundPokemon(bot, message, foundPokemon, pokemonName) {
               }
             });
           } else {
-            bot.reply(message, 'Sorry, I couldn\'t find the Pokémon that you requested.');
-            return;
+            bot.startConversation(message, function(err, convo) {
+              convo.say('Sorry, I couldn\'t find the Pokémon that you requested.');
+              convo.say({attachment: mainMenu});
+            });
           }
         });
       } else {
-        bot.reply(message, 'Sorry, I couldn\'t find the Pokémon that you requested.');
-        return;
+        bot.startConversation(message, function(err, convo) {
+          convo.say('Sorry, I couldn\'t find the Pokémon that you requested.');
+          convo.say({attachment: mainMenu});
+        });
       } 
     }
   });
 }
-
-controller.on('facebook_postback', function(bot, message) {
-  var messageSplit = message.payload.split('*');
-  var onButtonPress = messageSplit[0];
-  
-  if (messageSplit.length > 1) {
-    var pokemonName = messageSplit[1];
-    var pokemonChainUrl = messageSplit[2];
-    var displayName = messageSplit[3];
-  }
-  
-  if (onButtonPress === 'evolution-button') {
-    bot.reply(message, 'No problem, hold on a second!');
-    evolutionChain(bot, message, pokemonName, pokemonChainUrl, displayName);
-  } 
-  else if (onButtonPress === 'search') {
-    searchPokemon(bot, message);
-  } 
-  else if (onButtonPress === 'thatsall-button') {
-    bot.reply(message, 'Ok, tell me if you need my help again!');
-    return;
-  }
-});
 
 function evolutionChain(bot, message, pokemonName, pokemonChainUrl, displayName) {
   
@@ -340,12 +423,12 @@ function evolutionChain(bot, message, pokemonName, pokemonChainUrl, displayName)
             var details = pokemon.evolution_details[0];  // verify length; is there possibly more than 1?
             sayEvolutionInfos(convo, details, current, evolved, evolutionInfos, displayName);
           });
-          convo.say({attachment: mainMenu});
+          convo.say({attachment: newSearchMenu});
         } 
         
         else if (first === current && secondLevel.length === 0) {  // if the current pokemon is the first in the chain and there is no second level
           convo.say(displayName + ' doesn\'t have any known evolution.');
-          convo.say({attachment: mainMenu});
+          convo.say({attachment: newSearchMenu});
         } 
         
         else if (secondLevel.indexOf(current) !== -1 && thirdLevel.length > 0) {  // if the current pokemon is the second in the chain and there is a third level
@@ -356,19 +439,19 @@ function evolutionChain(bot, message, pokemonName, pokemonChainUrl, displayName)
             var details = pokemon.evolution_details[0];  // verify length; is there possibly more than 1?
             sayEvolutionInfos(convo, details, current, evolved, evolutionInfos, displayName);
           });
-          convo.say({attachment: mainMenu});
+          convo.say({attachment: newSearchMenu});
         } 
         
         else if (secondLevel.indexOf(current) !== -1 && thirdLevel.length === 0) {  // if the current pokemon is the second in the chain and there is no third level
           convo.say(capitalizeFirst(splitJoin(first)) + ' \u21e8 ' + beautifyWordsArrays(secondLevel));
           convo.say(displayName + ' is at it\'s final evolution stage.');
-          convo.say({attachment: mainMenu});
+          convo.say({attachment: newSearchMenu});
         } 
         
         else if (thirdLevel.indexOf(current) !== -1) {
           convo.say(capitalizeFirst(splitJoin(first)) + ' \u21e8 ' + beautifyWordsArrays(secondLevel) + ' \u21e8 ' + beautifyWordsArrays(thirdLevel));
           convo.say(displayName + ' is at it\'s final evolution stage.');
-          convo.say({attachment: mainMenu});
+          convo.say({attachment: newSearchMenu});
         }
       });
     }
