@@ -263,7 +263,7 @@ controller.hears(['hello', '^hi$', '^yo$', '^hey$', 'what\'s up'], 'message_rece
     userFirstRun[message.user] = 'done';
     bot.startConversation(message, function(err, convo) {
       if (!err) {
-        convo.say('Hey there. Nice to meet you!');
+        convo.say('Hey there, Pokémon trainer. :) Nice to meet you! I am your assistant Pokédex. Feel free to browse through my menus, or say "help" if you want to know more!');
         convo.say({attachment: mainMenu});
       } else {
         bot.reply(message, 'error'); // verify
@@ -273,7 +273,7 @@ controller.hears(['hello', '^hi$', '^yo$', '^hey$', 'what\'s up'], 'message_rece
   } else {
     bot.startConversation(message, function(err, convo) {
       if (!err) {
-        convo.say('Hello, nice to see you again!');
+        convo.say('Hello, nice to see you again! :)');
         convo.say({attachment: mainMenu});
       } else {
         bot.reply(message, 'error'); // verify
@@ -291,7 +291,8 @@ controller.hears('^help$', 'message_received', sendHelp);
 function sendHelp(bot, message) {
   bot.startConversation(message, function(err, convo) {
     if (!err) {
-      convo.say('I am a work in progress.');
+      convo.say('I heard that you want to know more about me? :) \nI am a bot made to assist Pokémon trainers like you, on a quest to catch \'em all! \n\nI can find any Pokémon through any Pokédex of a given game, and tell you about it\'s evolution trigger and conditions. I can also tell you what type is good against another.');
+      convo.say('All my functions are available through my main menu. Though you can also trigger them by saying things like "pokemon", "pokedex", "type". \n\nYou can also always bring up the main menu by greeting me. If you need a reminder, don\'t hesitate to say "help"!');
       convo.say({attachment: mainMenu});
     } else {
       bot.reply(message, 'error'); // verify
@@ -306,7 +307,7 @@ function sendHelp(bot, message) {
 var userCurrentGame = {};
 var userPokedex = {};
 
-controller.hears(['game', '^pokedex$'], 'message_received', findGame);
+controller.hears(['game', '^pokedex$', '^pokédex$'], 'message_received', findGame);
 
 function findGame(bot, message) {
   bot.startConversation(message, function(err, convo) {
@@ -458,7 +459,7 @@ function getPokedex(bot, message) {
 
 // WHICH POKEMON ?
 
-controller.hears(['^pokemon$', '^search$'], 'message_received', searchPokemon);
+controller.hears(['^pokemon$', '^pokémon$', '^search$'], 'message_received', searchPokemon);
 
 function searchPokemon(bot, message) {
   bot.startConversation(message, function(err, convo) {
@@ -780,7 +781,7 @@ function sayEvolutionInfos(convo, details, current, evolved, evolutionInfos, dis
     conditions += '\n• at level ' + details.min_level;
   }
   if (details.min_beauty) {
-    conditions += '\n• min. beauty level: ' + details.min_beauty;  // verify
+    conditions += '\n• while having a beauty level of at least: ' + details.min_beauty;
   }
   if (details.time_of_day.length > 1) {
     conditions += '\n• during the ' + details.time_of_day;
@@ -1028,10 +1029,9 @@ function reverseSplitJoin(sentence) {
 
 // TO DO LIST:
 /* 
+  - controller.hears for everything else that is not a command and bring up the main menu?
   - display location (evolution trigger) only for current game
   - test with multiple users
-  - help section
-  - better hello first run
   - read me
   - test more pokemon evolutions (triggers / conditions) 
 */
