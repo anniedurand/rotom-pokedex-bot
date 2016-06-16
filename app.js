@@ -772,7 +772,7 @@ function sayEvolutionInfos(convo, details, current, evolved, evolutionInfos, dis
     if (bool === true) {
       return conditions;
     } else {
-      return;
+      return '.';
     }
   }
   
@@ -819,7 +819,7 @@ function sayEvolutionInfos(convo, details, current, evolved, evolutionInfos, dis
     conditions += '\n• with a minimum happiness level of ' + details.min_happiness;  // verify
   }
   if (details.held_item) {
-    conditions += '\n• while holding: ' + splitJoin(details.held_item.name); // verify
+    conditions += '\n• while holding: ' + capitalizeFirst(splitJoin(details.held_item.name)); // verify
   }
   if (details.known_move) {
     conditions += '\n• while knowing the move: ' + capitalizeFirst(splitJoin(details.known_move.name)); 
@@ -919,8 +919,15 @@ function getType(bot, message) {
                 }
               });
             } else {
-              bot.reply(message, 'Sorry, I couldn\'t find the type that you requested.');  // verify
-              return;
+              bot.startConversation(message, function(err, convo) {
+                if (!err) {
+                  convo.say('Sorry, I couldn\'t find the type that you requested.');  // verify
+                  convo.say({attachment: mainMenu});
+                } else {
+                  bot.reply(message, 'error'); // verify
+                  return;
+                }
+              });
             }
           } else {
             bot.reply(message, 'error'); // verify
@@ -1021,7 +1028,7 @@ function reverseSplitJoin(sentence) {
 
 // TO DO LIST:
 /* 
-  - info on types
+  - display location (evolution trigger) only for current game
   - test with multiple users
   - help section
   - better hello first run
