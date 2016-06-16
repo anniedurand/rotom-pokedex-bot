@@ -16,6 +16,12 @@ controller.setupWebserver(process.env.PORT, function(err,webserver) {
   });
 });
 
+controller.middleware.receive.use(function(bot, message, next) {
+  console.log(userCurrentGame, 'userCurrentGame')
+  console.log(userPokedex, 'userPokedex')
+  next();
+})
+
 // MENUS
 var mainMenu = {
   'type':'template',
@@ -293,71 +299,76 @@ controller.hears(['game', '^pokedex$'], 'message_received', findGame);
 
 function findGame(bot, message) {
   bot.startConversation(message, function(err, convo) {
-    if (!err && !userCurrentGame[message.user]) {
-      convo.ask('Which game are you currently playing?', function(response, convo) {
-        var userAnswer = response.text.toLowerCase();
-        
-        // if 'pokemon' is in the answer, remove it
-        if (userAnswer.indexOf('pokemon') !== -1) {
-          userAnswer = userAnswer.split('pokemon ')[1];
-        } else if (userAnswer.indexOf('pokémon') !== -1) {
-          userAnswer = userAnswer.split('pokémon ')[1];
-        }
-        
-        // REGEXP (to avoid having another game/multiple games as a result ('black' instead of 'black 2', etc.))
-        if (userAnswer === 'y') { 
-          userAnswer = /\sy$/;
-        } else if (userAnswer === 'x') {
-          userAnswer = /^x\s/;
-        } else if (userAnswer === 'ruby') {
-          userAnswer = /^ruby\s/;
-        } else if (userAnswer === 'red') {
-          userAnswer = /^red\s/;
-        } else if (userAnswer === 'gold') {
-          userAnswer = /^gold\s/;
-        } else if (userAnswer === 'silver') {
-          userAnswer = /\ssilver$/;
-        } else if (userAnswer === 'white') {
-          userAnswer = /\swhite$/;
-        } else if (userAnswer === 'sapphire') {
-          userAnswer = /^ruby sapphire$/;
-        } else if (userAnswer === 'black') {
-          userAnswer = /^black white$/;
-        }
-        
-        // Fetching game info
-        request('https://pokeapi.co/api/v2/version-group/', function (err, result) {
-          if (!err) {
-            var resultObject = JSON.parse(result.body);
-            var versionGroup = resultObject.results;
-            
-            // loop over each available game
-            versionGroup.forEach(function(version) {
-              var currentGameName = version.name.split('-').join(' ');
-              console.log(currentGameName);
-              
-              // compare user answer to available games. if found, save infos for that game
-              if (currentGameName.search(userAnswer) !== -1 && currentGameName !== 'colosseum' && currentGameName !== 'xd') {    // ignoring Colosseum and XD
-                console.log('found! here is the url: ' + version.url);
-                userCurrentGame[message.user] = version;
-              }
-            });
-            
-            // if game infos saved
-            if (userCurrentGame[message.user]) {
-              getPokedex(bot, message);  // call next function
-            }
-          } else {
-            bot.reply(message, 'error'); // verify
-            return;
+    if (!err) {
+      if (!userCurrentGame[message.user]) {
+        convo.ask('Which game are you currently playing?', function(response, convo) {
+          var userAnswer = response.text.toLowerCase();
+          
+          // if 'pokemon' is in the answer, remove it
+          if (userAnswer.indexOf('pokemon') !== -1) {
+            userAnswer = userAnswer.split('pokemon ')[1];
+          } else if (userAnswer.indexOf('pokémon') !== -1) {
+            userAnswer = userAnswer.split('pokémon ')[1];
           }
+          
+          // REGEXP (to avoid having another game/multiple games as a result ('black' instead of 'black 2', etc.))
+          if (userAnswer === 'y') { 
+            userAnswer = /\sy$/;
+          } else if (userAnswer === 'x') {
+            userAnswer = /^x\s/;
+          } else if (userAnswer === 'ruby') {
+            userAnswer = /^ruby\s/;
+          } else if (userAnswer === 'red') {
+            userAnswer = /^red\s/;
+          } else if (userAnswer === 'gold') {
+            userAnswer = /^gold\s/;
+          } else if (userAnswer === 'silver') {
+            userAnswer = /\ssilver$/;
+          } else if (userAnswer === 'white') {
+            userAnswer = /\swhite$/;
+          } else if (userAnswer === 'sapphire') {
+            userAnswer = /^ruby sapphire$/;
+          } else if (userAnswer === 'black') {
+            userAnswer = /^black white$/;
+          }
+          
+          // Fetching game info
+          request('https://pokeapi.co/api/v2/version-group/', function (err, result) {
+            if (!err) {
+              var resultObject = JSON.parse(result.body);
+              var versionGroup = resultObject.results;
+              
+              // loop over each available game
+              versionGroup.forEach(function(version) {
+                var currentGameName = version.name.split('-').join(' ');
+                console.log(currentGameName);
+                
+                // compare user answer to available games. if found, save infos for that game
+                if (currentGameName.search(userAnswer) !== -1 && currentGameName !== 'colosseum' && currentGameName !== 'xd') {    // ignoring Colosseum and XD
+                  console.log('found! here is the url: ' + version.url);
+                  userCurrentGame[message.user] = version;
+                }
+              });
+              
+              // if game infos saved
+              if (userCurrentGame[message.user]) {
+                getPokedex(bot, message);  // call next function
+              }
+            } else {
+              bot.reply(message, 'error'); // verify
+              return;
+            }
+          });
+          convo.stop();
         });
+      } else {
+        delete userCurrentGame[message.user];
         convo.stop();
-      });
+        findGame(bot, message);
+      }
     } else {
-      bot.reply(message, 'error');
+      bot.reply(message, 'error'); // verify, use convo.stop(); instead of return??
       return;
-      // else if error or pokedex already set: do something - verify
     }
   });
 }
