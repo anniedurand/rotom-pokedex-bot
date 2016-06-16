@@ -236,8 +236,7 @@ controller.on('facebook_postback', function(bot, message) {
     }
   }
   else if (onButtonPress === 'help') {
-    bot.reply(message, 'Sorry, this area still is in construction');
-    // call help function
+    sendHelp(bot, message);
   }
   else if (onButtonPress === 'pokedexchoice') {
     userPokedex[message.user] = [ { url: chosenPokedexUrl, name: chosenPokedexName } ];
@@ -287,16 +286,20 @@ controller.hears(['hello', '^hi$', '^yo$', '^hey$', 'what\'s up'], 'message_rece
 
 
 // HELP SECTION
-controller.hears('^help$', 'message_received', function(bot, message) {
+
+controller.hears('^help$', 'message_received', sendHelp);
+  
+function sendHelp(bot, message) {
   bot.startConversation(message, function(err, convo) {
     if (!err) {
-      convo.say('I am a work in progress. Try saying "pokemon" or "hi"!');
+      convo.say('I am a work in progress.');
+      convo.say({attachment: mainMenu});
     } else {
       bot.reply(message, 'error'); // verify
       return;
     }
   });
-});
+}
 
 
 // WHICH GAME: Finding which game the user is playing for pokedex entry numbers
@@ -875,6 +878,7 @@ function reverseSplitJoin(sentence) {
   - info on types
   - test with multiple users
   - help section
+  - better hello first run
   - read me
   - test more pokemon evolutions (triggers / conditions) 
 */
