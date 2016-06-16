@@ -125,19 +125,22 @@ controller.on('facebook_postback', function(bot, message) {
   else if (onButtonPress === 'thatsall-button') {
     bot.reply(message, 'Ok, tell me if you need my help again!');
     return;
-  } else if (onButtonPress === 'mainmenu-button') {
+  } 
+  else if (onButtonPress === 'mainmenu-button') {
     bot.reply(message, {attachment: mainMenu});
-  } else if (onButtonPress === 'moreoptions-button') {
+  } 
+  else if (onButtonPress === 'moreoptions-button') {
     bot.reply(message, {attachment: mainMenuNext});
-  } else if (onButtonPress === 'search-type') {
-    bot.reply(message, 'Sorry, this area is in construction')
+  } 
+  else if (onButtonPress === 'search-type') {
+    bot.reply(message, 'Sorry, this area is still in construction');
     // call type function
-  } else if (onButtonPress === 'set-pokedex') {
+  } 
+  else if (onButtonPress === 'set-pokedex') {
     setPokedex(bot, message);
-    // bot.reply(message, 'Sorry, this area is in construction')
-    // call pokedex function
-  } else if (onButtonPress === 'help') {
-    bot.reply(message, 'Sorry, this area is in construction')
+  } 
+  else if (onButtonPress === 'help') {
+    bot.reply(message, 'Sorry, this area still is in construction');
     // call help function
   }
 });
@@ -504,8 +507,16 @@ function evolutionChain(bot, message, pokemonName, pokemonChainUrl, displayName)
           
           evoLevelTwoArray.forEach(function(pokemon) {
             var evolved = capitalizeFirst(splitJoin(pokemon.species.name));
-            var details = pokemon.evolution_details[0];  //   SEE MAGNETON, LEAFEON, GLACEON, for location - needs fix
-            sayEvolutionInfos(convo, details, current, evolved, evolutionInfos, displayName);
+            var details = pokemon.evolution_details[0];  //   check if only for locations? also potential feature: display only if location is in current game
+            var evolution_details = pokemon.evolution_details;
+            var locationsArray = [];
+            if (evolution_details.length > 1) {
+              evolution_details.forEach(function(index) {
+                var locationFound = ' ' + capitalizeFirst(splitJoin(index.location.name));
+                locationsArray.push(locationFound);
+              });
+            }
+            sayEvolutionInfos(convo, details, current, evolved, evolutionInfos, displayName, locationsArray);
           });
           convo.say({attachment: newSearchMenu});
         } 
@@ -520,8 +531,18 @@ function evolutionChain(bot, message, pokemonName, pokemonChainUrl, displayName)
           
           evoLevelThreeArray.forEach(function(pokemon) {
             var evolved = capitalizeFirst(splitJoin(pokemon.species.name));
-            var details = pokemon.evolution_details[0];  //  SEE MAGNETON, LEAFEON, GLACEON, for location - needs fix
-            sayEvolutionInfos(convo, details, current, evolved, evolutionInfos, displayName);
+            var details = pokemon.evolution_details[0];  //   check if only for locations? also potential feature: display only if location is in current game
+            
+            var evolution_details = pokemon.evolution_details;
+            var locationsArray = [];
+            if (evolution_details.length > 1) {
+              evolution_details.forEach(function(index) {
+                var locationFound = ' ' + capitalizeFirst(splitJoin(index.location.name));
+                locationsArray.push(locationFound);
+              });
+            }
+            
+            sayEvolutionInfos(convo, details, current, evolved, evolutionInfos, displayName, locationsArray);
           });
           convo.say({attachment: newSearchMenu});
         } 
@@ -586,7 +607,7 @@ function trigger(triggerType, details) {
   }
 }
 
-function sayEvolutionInfos(convo, details, current, evolved, evolutionInfos, displayName) {
+function sayEvolutionInfos(convo, details, current, evolved, evolutionInfos, displayName, locationsArray) {
   var conditions = ':';
   var shouldDisplay = false;
   
@@ -638,7 +659,7 @@ function sayEvolutionInfos(convo, details, current, evolved, evolutionInfos, dis
     conditions += '\n• while having a ' + capitalizeFirst(details.party_species.name) + ' in your party';
   }
   if (details.min_happiness) {
-    conditions += '\n• min. happiness level: ' + details.min_happiness;  // verify
+    conditions += '\n• with a minimum happiness level of ' + details.min_happiness;  // verify
   }
   if (details.held_item) {
     conditions += '\n• while holding: ' + splitJoin(details.held_item.name); // verify
@@ -646,17 +667,8 @@ function sayEvolutionInfos(convo, details, current, evolved, evolutionInfos, dis
   if (details.known_move) {
     conditions += '\n• while knowing the move: ' + capitalizeFirst(splitJoin(details.known_move.name)); 
   }
-  if (details.location) {
-    var pokemonLocation = '';
-    if (details.location.name === 'sinnoh-route-217') {
-      pokemonLocation = '\nan Ice Rock (more info: \nhttp://goo.gl/LnSHVd)';
-    } else if (details.location.name === 'eterna-forest') {
-      pokemonLocation = '\na Moss Rock (more info: \nhttp://goo.gl/oSS3g)';
-    } else {
-      pokemonLocation = capitalizeFirst(splitJoin(details.location.name));
-    }
-    console.log(pokemonLocation)
-    conditions += '\n• while being near: ' + pokemonLocation;  // see if other fixes needed.  MAGNETON **
+  if (locationsArray.length > 0) {
+    conditions += '\n• while being located in either:' + locationsArray;
   }
   
   if (conditions.length > 1) {
