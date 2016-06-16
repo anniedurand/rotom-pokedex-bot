@@ -175,7 +175,18 @@ var userCurrentGame = {};
 var userPokedex = {};
 
 controller.hears(['game', 'pokedex'], 'message_received', setPokedex);
-  
+
+function displayGameName(game) {
+  var array = game.split(' ');
+  if (array.length === 4) {
+    var first = array[0]+' '+array[1];
+    var second = array[2]+' '+array[3];
+    return capitalizeFirst(first + ' / ' + second);
+  } else {
+    return capitalizeFirst(array.join(' / '));
+  }
+}
+
 function setPokedex(bot, message) {
   bot.startConversation(message, function(err, convo) {
     if (!err && !userCurrentGame[message.user]) {
@@ -221,7 +232,7 @@ function setPokedex(bot, message) {
               console.log(currentGameName);
               
               if (currentGameName.search(userAnswer) !== -1 && currentGameName !== 'colosseum' && currentGameName !== 'xd') {    // ignoring Colosseum and XD
-                console.log('found! here is the url: ' + versionGroup.url);
+                console.log('found! here is the url: ' + version.url);
                 userCurrentGame[message.user] = version.name;
                 
                 request(version.url, function(err, result) {
@@ -229,7 +240,6 @@ function setPokedex(bot, message) {
                     var resultObject = JSON.parse(result.body);
                     var pokedexes = resultObject.pokedexes;
                     var pokedexesArray = [];
-                    currentGameName = currentGameName.replace(/\b./g, function(m){ return m.toUpperCase(); });
                     
                     var counter = pokedexes.length;
                     
@@ -241,14 +251,49 @@ function setPokedex(bot, message) {
                           var pokedexName = resultObject.names[resultObject.names.length -1].name;
                           pokedexesArray.push(pokedexName);
                           
+                          
                           if (counter === 0) {
                             if (pokedexesArray.length > 1) {
+                              var pokedexButtons = [];
+                              var count = 0;
+                              pokedexesArray.forEach(function(currentPokedex) {
+                                count++;
+                                var button = {
+                                  type:'postback',
+                                  title: currentPokedex,
+                                  payload:'pokedex*' + count
+                                };
+                                pokedexButtons.push(button);
+                              });
+                              
+                              var pokedexChoice = {
+                                'type':'template',
+                                'payload':{
+                                  'template_type':'generic',
+                                  'elements':[
+                                    {
+                                      'title': 'Which Pokédex?',
+                                      'buttons': pokedexButtons
+                                    }
+                                  ]
+                                }
+                              }; 
+                              
+                              console.log(pokedexButtons)
+                              console.log(pokedexesArray)
+                              
+                              
+                              if (pokedexesArray.length === count) {
+                                bot.startConversation(message, function(err, convo) {
+                                  convo.say('I have found multiple Pokédexes for this game.');
+                                  convo.say({attachment: pokedexChoice});
+                                });
+                              }
                               
                             } else {
                               userPokedex[message.user] = resultObject.pokedexes;
-                              bot.reply(message, 'You are currently playing Pokémon ' + currentGameName + '. Pokédex now set to' + beautifyWordsArrays(pokedexesArray));
+                              bot.reply(message, 'You are currently playing Pokémon ' + displayGameName(currentGameName) + '. Pokédex now set to' + beautifyWordsArrays(pokedexesArray) + '.');
                             }
-
                           }
                         });
                       });
@@ -265,7 +310,6 @@ function setPokedex(bot, message) {
     }
   });
 }
-// });
 
 
 // WHICH POKEMON ?
@@ -426,7 +470,10 @@ function evolutionChain(bot, message, pokemonName, pokemonChainUrl, displayName)
       
       bot.startConversation(message, function(err, convo) {
         var evoLevelTwoArray = evolutionInfos.chain.evolves_to;
-        var evoLevelThreeArray = evolutionInfos.chain.evolves_to[0].evolves_to;
+        var evoLevelThreeArray = [];
+        if (evoLevelTwoArray.length > 0) {
+          evoLevelThreeArray = evolutionInfos.chain.evolves_to[0].evolves_to;
+        }
         
         var current = pokemonName;
         var first = evolutionInfos.chain.species.name;
@@ -457,7 +504,7 @@ function evolutionChain(bot, message, pokemonName, pokemonChainUrl, displayName)
           
           evoLevelTwoArray.forEach(function(pokemon) {
             var evolved = capitalizeFirst(splitJoin(pokemon.species.name));
-            var details = pokemon.evolution_details[0];  // verify length; is there possibly more than 1?
+            var details = pokemon.evolution_details[0];  //   SEE MAGNETON, LEAFEON, GLACEON, for location - needs fix
             sayEvolutionInfos(convo, details, current, evolved, evolutionInfos, displayName);
           });
           convo.say({attachment: newSearchMenu});
@@ -473,7 +520,7 @@ function evolutionChain(bot, message, pokemonName, pokemonChainUrl, displayName)
           
           evoLevelThreeArray.forEach(function(pokemon) {
             var evolved = capitalizeFirst(splitJoin(pokemon.species.name));
-            var details = pokemon.evolution_details[0];  // verify length; is there possibly more than 1?
+            var details = pokemon.evolution_details[0];  //  SEE MAGNETON, LEAFEON, GLACEON, for location - needs fix
             sayEvolutionInfos(convo, details, current, evolved, evolutionInfos, displayName);
           });
           convo.say({attachment: newSearchMenu});
@@ -516,7 +563,7 @@ function beautifyWordsArrays(array) {
 }
 
 function capitalizeFirst(pokemonName) {
-  return pokemonName.charAt(0).toUpperCase() + pokemonName.slice(1);
+  return pokemonName.replace(/\b./g, function(m){ return m.toUpperCase(); });
 }
 
 function splitJoin(sentence) {
@@ -609,7 +656,7 @@ function sayEvolutionInfos(convo, details, current, evolved, evolutionInfos, dis
       pokemonLocation = capitalizeFirst(splitJoin(details.location.name));
     }
     console.log(pokemonLocation)
-    conditions += '\n• while being near: ' + pokemonLocation;  // see if other fixes needed.
+    conditions += '\n• while being near: ' + pokemonLocation;  // see if other fixes needed.  MAGNETON **
   }
   
   if (conditions.length > 1) {
