@@ -1,11 +1,14 @@
+// MODULES
 var Botkit = require('botkit');
 var request = require('request');
 
+// CONFIG
 var controller = Botkit.facebookbot({
   access_token: process.env.page_access_token,
   verify_token: process.env.verify_token,
 });
 
+// BOT SPAWN
 var bot = controller.spawn({
 });
 
@@ -16,13 +19,16 @@ controller.setupWebserver(process.env.PORT, function(err,webserver) {
   });
 });
 
+// MONITORING MIDDLEWARE
 controller.middleware.receive.use(function(bot, message, next) {
   console.log(userCurrentGame, 'userCurrentGame')
   console.log(userPokedex, 'userPokedex')
   next();
 })
 
+
 // MENUS
+
 var mainMenu = {
   'type':'template',
   'payload':{
@@ -141,6 +147,7 @@ var newSearchMenu = {
 
 
 // MENUS HANDLER
+
 controller.on('facebook_postback', function(bot, message) {
   var currentGameName;
   
@@ -248,9 +255,11 @@ controller.on('facebook_postback', function(bot, message) {
   }
 });
 
-var userFirstRun = {};
 
 // HELLO
+
+var userFirstRun = {};
+
 controller.hears(['hello', '^hi$', '^yo$', '^hey$', 'what\'s up'], 'message_received', function(bot, message) {  // NOTE: Change dialog, add user nickname question linked with database
   if (!userFirstRun[message.user]) {
     userFirstRun[message.user] = 'done';
@@ -536,6 +545,9 @@ function searchPokemon(bot, message) {
   });
 }
 
+
+// DISPLAY POKEMON WITH MENU
+
 function displayFoundPokemon(bot, message, foundPokemon, pokemonName, entry_number) {
   request(foundPokemon, function (err, result) {
     if (!err) {
@@ -613,6 +625,9 @@ function displayFoundPokemon(bot, message, foundPokemon, pokemonName, entry_numb
   });
 }
 
+
+// DISPLAY EVOLUTION CHAIN
+
 function evolutionChain(bot, message, pokemonName, pokemonChainUrl, displayName) {
   
   request(pokemonChainUrl, function (err, result) {
@@ -620,139 +635,107 @@ function evolutionChain(bot, message, pokemonName, pokemonChainUrl, displayName)
       var evolutionInfos = JSON.parse(result.body);
       
       bot.startConversation(message, function(err, convo) {
-        var evoLevelTwoArray = evolutionInfos.chain.evolves_to;
-        var evoLevelThreeArray = [];
-        if (evoLevelTwoArray.length > 0) {
-          evoLevelThreeArray = evolutionInfos.chain.evolves_to[0].evolves_to;
-        }
-        
-        var current = pokemonName;
-        var first = evolutionInfos.chain.species.name;
-        var secondLevel = [];
-        var thirdLevel = [];
-        
-        // pushing all second level pokemon names for a specie in the second level array
-        if (evoLevelTwoArray.length > 0) {
-          evoLevelTwoArray.forEach(function(pokemon) {
-            secondLevel.push(pokemon.species.name);
-          });
-        }
-        
-        // pushing all third level pokemon names for a specie in the third level array
-        if (evoLevelThreeArray.length > 0) {
-          evoLevelThreeArray.forEach(function(pokemon) {
-            thirdLevel.push(pokemon.species.name);
-          });
-        }
-        
-        // sending the right information depending on the evolution chain
-        if (first === current && secondLevel.length > 0) {    // if the current pokemon is the first in the chain and there is a second level
-          if (thirdLevel.length === 0) {
-            convo.say(displayName + ' \u21e8 ' + beautifyWordsArrays(secondLevel));
-          } else {
-            convo.say(displayName + ' \u21e8 ' + beautifyWordsArrays(secondLevel) + ' \u21e8 ' + beautifyWordsArrays(thirdLevel));
+        if (!err) {
+          var evoLevelTwoArray = evolutionInfos.chain.evolves_to;
+          var evoLevelThreeArray = [];
+          if (evoLevelTwoArray.length > 0) {
+            evoLevelThreeArray = evolutionInfos.chain.evolves_to[0].evolves_to;
           }
           
-          evoLevelTwoArray.forEach(function(pokemon) {
-            var evolved = capitalizeFirst(splitJoin(pokemon.species.name));
-            var details = pokemon.evolution_details[0];  //   check if only for locations? also potential feature: display only if location is in current game
-            var evolution_details = pokemon.evolution_details;
-            var locationsArray = [];
-            if (evolution_details.length > 1) {
-              evolution_details.forEach(function(index) {
-                var locationFound = ' ' + capitalizeFirst(splitJoin(index.location.name));
-                locationsArray.push(locationFound);
-              });
-            }
-            sayEvolutionInfos(convo, details, current, evolved, evolutionInfos, displayName, locationsArray);
-          });
-          convo.say({attachment: newSearchMenu});
-        } 
-        
-        else if (first === current && secondLevel.length === 0) {  // if the current pokemon is the first in the chain and there is no second level
-          convo.say(displayName + ' doesn\'t have any known evolution.');
-          convo.say({attachment: newSearchMenu});
-        } 
-        
-        else if (secondLevel.indexOf(current) !== -1 && thirdLevel.length > 0) {  // if the current pokemon is the second in the chain and there is a third level
-          convo.say(capitalizeFirst(splitJoin(first)) + ' \u21e8 ' + beautifyWordsArrays(secondLevel) + ' \u21e8 ' + beautifyWordsArrays(thirdLevel));
+          var current = pokemonName;
+          var first = evolutionInfos.chain.species.name;
+          var secondLevel = [];
+          var thirdLevel = [];
           
-          evoLevelThreeArray.forEach(function(pokemon) {
-            var evolved = capitalizeFirst(splitJoin(pokemon.species.name));
-            var details = pokemon.evolution_details[0];  //   check if only for locations? also potential feature: display only if location is in current game
-            
-            var evolution_details = pokemon.evolution_details;
-            var locationsArray = [];
-            if (evolution_details.length > 1) {
-              evolution_details.forEach(function(index) {
-                var locationFound = ' ' + capitalizeFirst(splitJoin(index.location.name));
-                locationsArray.push(locationFound);
-              });
+          // pushing all second level pokemon names for a specie in the second level array
+          if (evoLevelTwoArray.length > 0) {
+            evoLevelTwoArray.forEach(function(pokemon) {
+              secondLevel.push(pokemon.species.name);
+            });
+          }
+          
+          // pushing all third level pokemon names for a specie in the third level array
+          if (evoLevelThreeArray.length > 0) {
+            evoLevelThreeArray.forEach(function(pokemon) {
+              thirdLevel.push(pokemon.species.name);
+            });
+          }
+          
+          // sending the right information depending on the evolution chain
+          if (first === current && secondLevel.length > 0) {    // if the current pokemon is the first in the chain and there is a second level
+            if (thirdLevel.length === 0) {
+              convo.say(displayName + ' \u21e8 ' + beautifyWordsArrays(secondLevel));
+            } else {
+              convo.say(displayName + ' \u21e8 ' + beautifyWordsArrays(secondLevel) + ' \u21e8 ' + beautifyWordsArrays(thirdLevel));
             }
             
-            sayEvolutionInfos(convo, details, current, evolved, evolutionInfos, displayName, locationsArray);
-          });
-          convo.say({attachment: newSearchMenu});
-        } 
-        
-        else if (secondLevel.indexOf(current) !== -1 && thirdLevel.length === 0) {  // if the current pokemon is the second in the chain and there is no third level
-          convo.say(capitalizeFirst(splitJoin(first)) + ' \u21e8 ' + beautifyWordsArrays(secondLevel));
-          convo.say(displayName + ' is at it\'s final evolution stage.');
-          convo.say({attachment: newSearchMenu});
-        } 
-        
-        else if (thirdLevel.indexOf(current) !== -1) {
-          convo.say(capitalizeFirst(splitJoin(first)) + ' \u21e8 ' + beautifyWordsArrays(secondLevel) + ' \u21e8 ' + beautifyWordsArrays(thirdLevel));
-          convo.say(displayName + ' is at it\'s final evolution stage.');
-          convo.say({attachment: newSearchMenu});
+            evoLevelTwoArray.forEach(function(pokemon) {
+              var evolved = capitalizeFirst(splitJoin(pokemon.species.name));
+              var details = pokemon.evolution_details[0];  //   check if only for locations? also potential feature: display only if location is in current game
+              var evolution_details = pokemon.evolution_details;
+              var locationsArray = [];
+              if (evolution_details.length > 1) {
+                evolution_details.forEach(function(index) {
+                  var locationFound = ' ' + capitalizeFirst(splitJoin(index.location.name));
+                  locationsArray.push(locationFound);
+                });
+              }
+              sayEvolutionInfos(convo, details, current, evolved, evolutionInfos, displayName, locationsArray);
+            });
+            convo.say({attachment: newSearchMenu});
+          } 
+          
+          else if (first === current && secondLevel.length === 0) {  // if the current pokemon is the first in the chain and there is no second level
+            convo.say(displayName + ' doesn\'t have any known evolution.');
+            convo.say({attachment: newSearchMenu});
+          } 
+          
+          else if (secondLevel.indexOf(current) !== -1 && thirdLevel.length > 0) {  // if the current pokemon is the second in the chain and there is a third level
+            convo.say(capitalizeFirst(splitJoin(first)) + ' \u21e8 ' + beautifyWordsArrays(secondLevel) + ' \u21e8 ' + beautifyWordsArrays(thirdLevel));
+            
+            evoLevelThreeArray.forEach(function(pokemon) {
+              var evolved = capitalizeFirst(splitJoin(pokemon.species.name));
+              var details = pokemon.evolution_details[0];  //   check if only for locations? also potential feature: display only if location is in current game
+              
+              var evolution_details = pokemon.evolution_details;
+              var locationsArray = [];
+              if (evolution_details.length > 1) {
+                evolution_details.forEach(function(index) {
+                  var locationFound = ' ' + capitalizeFirst(splitJoin(index.location.name));
+                  locationsArray.push(locationFound);
+                });
+              }
+              
+              sayEvolutionInfos(convo, details, current, evolved, evolutionInfos, displayName, locationsArray);
+            });
+            convo.say({attachment: newSearchMenu});
+          } 
+          
+          else if (secondLevel.indexOf(current) !== -1 && thirdLevel.length === 0) {  // if the current pokemon is the second in the chain and there is no third level
+            convo.say(capitalizeFirst(splitJoin(first)) + ' \u21e8 ' + beautifyWordsArrays(secondLevel));
+            convo.say(displayName + ' is at it\'s final evolution stage.');
+            convo.say({attachment: newSearchMenu});
+          } 
+          
+          else if (thirdLevel.indexOf(current) !== -1) {
+            convo.say(capitalizeFirst(splitJoin(first)) + ' \u21e8 ' + beautifyWordsArrays(secondLevel) + ' \u21e8 ' + beautifyWordsArrays(thirdLevel));
+            convo.say(displayName + ' is at it\'s final evolution stage.');
+            convo.say({attachment: newSearchMenu});
+          }
+        } else {
+          bot.reply(message, 'error');
+          return;
         }
       });
-    }
-  });
-}
-
-function displayGameName(game) {
-  var array = game.split(' ');
-  if (array.length === 4) {
-    var first = array[0]+' '+array[1];
-    var second = array[2]+' '+array[3];
-    return capitalizeFirst(first + ' / ' + second);
-  } else {
-    return capitalizeFirst(array.join(' / '));
-  }
-}
-
-function beautifyWordsArrays(array) {
-  var newArray = array.map(function(item) {
-    var words = [];
-    
-    if (item.indexOf('-') !== -1) {
-      words = item.split('-');
     } else {
-      words.push(item);
+      bot.reply(message, 'error');
+      return;
     }
-    
-    var capitalizedWords = words.map(function(word) { 
-      return ' ' + capitalizeFirst(word);
-    });
-    
-    var joinCapitalizedWords = capitalizedWords.join('');
-    return joinCapitalizedWords;
   });
-  return newArray;
 }
 
-function capitalizeFirst(pokemonName) {
-  return pokemonName.replace(/\b./g, function(m){ return m.toUpperCase(); });
-}
 
-function splitJoin(sentence) {
-  return sentence.split('-').join(' ');
-}
-
-function reverseSplitJoin(sentence) {
-  return sentence.split(' ').join('-');
-}
+// EVOLUTION TRIGGERS
 
 function trigger(triggerType, details) {
   if (triggerType === 'level-up') {
@@ -765,6 +748,9 @@ function trigger(triggerType, details) {
     return ' by shedding (?)'; // ? change this  
   }
 }
+
+
+// EVOLUTION CONDITIONS DISPLAY
 
 function sayEvolutionInfos(convo, details, current, evolved, evolutionInfos, displayName, locationsArray) {
   var conditions = ':';
@@ -837,3 +823,58 @@ function sayEvolutionInfos(convo, details, current, evolved, evolutionInfos, dis
   convo.say(displayName + ' evolves to ' + evolved + trigger(details.trigger.name, details) + displayConditions(shouldDisplay));
   // find a nice separator (for multiple evolutions like Eevee).... stars ? '\u2606'
 }
+
+
+// TEXT DISPLAY FUNCTIONS
+
+function displayGameName(game) {
+  var array = game.split(' ');
+  if (array.length === 4) {
+    var first = array[0]+' '+array[1];
+    var second = array[2]+' '+array[3];
+    return capitalizeFirst(first + ' / ' + second);
+  } else {
+    return capitalizeFirst(array.join(' / '));
+  }
+}
+
+function beautifyWordsArrays(array) {
+  var newArray = array.map(function(item) {
+    var words = [];
+    
+    if (item.indexOf('-') !== -1) {
+      words = item.split('-');
+    } else {
+      words.push(item);
+    }
+    
+    var capitalizedWords = words.map(function(word) { 
+      return ' ' + capitalizeFirst(word);
+    });
+    
+    var joinCapitalizedWords = capitalizedWords.join('');
+    return joinCapitalizedWords;
+  });
+  return newArray;
+}
+
+function capitalizeFirst(pokemonName) {
+  return pokemonName.replace(/\b./g, function(m){ return m.toUpperCase(); });
+}
+
+function splitJoin(sentence) {
+  return sentence.split('-').join(' ');
+}
+
+function reverseSplitJoin(sentence) {
+  return sentence.split(' ').join('-');
+}
+
+// TO DO LIST:
+/* 
+  - info on types
+  - test with multiple users
+  - help section
+  - read me
+  - test more pokemon evolutions (triggers / conditions) 
+*/
