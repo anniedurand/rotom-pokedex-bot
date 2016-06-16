@@ -329,7 +329,7 @@ controller.hears(['^pokemon$', 'search'], 'message_received', searchPokemon);
 function searchPokemon(bot, message) {
   bot.startConversation(message, function(err, convo) {
     if (!err) {
-      convo.ask('Which Pokémon would you like to know more about? Say it\'s name or national pokedex entry number.', function(response, convo) {
+      convo.ask('Which Pokémon would you like to know more about? Say it\'s name or Pokédex entry number.', function(response, convo) {
         bot.reply(message, 'Alright, please wait while I look through my files.');
         
         var chosenPokemon = response.text;
@@ -348,7 +348,7 @@ function searchPokemon(bot, message) {
           // add menu ?
         }
         
-        // finding the entry
+        // FINDING THE POKEMON ENTRY BASED ON SET POKEDEX
         if (chosenPokemonId || chosenPokemonName) {
           var pokedex;
           if (!userPokedex[message.user]) {
@@ -372,15 +372,16 @@ function searchPokemon(bot, message) {
                   var pokemonName = index.pokemon_species.name;
                   if (entry_number === chosenPokemonId) {
                     foundPokemon = index.pokemon_species.url;
-                    displayFoundPokemon(bot, message, foundPokemon, pokemonName);
+                    displayFoundPokemon(bot, message, foundPokemon, pokemonName, entry_number);
                   }
                 });
               } else if (chosenPokemonName) {   // if it's a name
                 pokemon_entries.forEach(function(index) {
+                  var entry_number = index.entry_number;
                   var pokemonName = index.pokemon_species.name;
                   if (pokemonName.indexOf(chosenPokemonName) !== -1) {
                     foundPokemon = index.pokemon_species.url;
-                    displayFoundPokemon(bot, message, foundPokemon, pokemonName);
+                    displayFoundPokemon(bot, message, foundPokemon, pokemonName, entry_number);
                   }
                 });
               }
@@ -406,11 +407,12 @@ function searchPokemon(bot, message) {
   });
 }
 
-function displayFoundPokemon(bot, message, foundPokemon, pokemonName) {
+function displayFoundPokemon(bot, message, foundPokemon, pokemonName, entry_number) {
   request(foundPokemon, function (err, result) {
     if (!err) {
       var resultObject = JSON.parse(result.body);
       var nationalDexNo = resultObject.pokedex_numbers[(resultObject.pokedex_numbers.length -1)].entry_number;
+      var currentPokedexEntryNo = entry_number;
       var pokemonChainUrl = resultObject.evolution_chain.url;
       
       if (nationalDexNo) {
@@ -434,7 +436,7 @@ function displayFoundPokemon(bot, message, foundPokemon, pokemonName) {
                 'template_type':'generic',
                 'elements':[
                   {
-                    'title': 'No. ' + nationalDexNo + ', ' + displayName + isBaby,
+                    'title': 'No. ' + currentPokedexEntryNo + ', ' + displayName + isBaby,
                     'image_url': pokemonInfo.sprites.front_default,
                     'subtitle': 'Type(s) : ' + beautifyWordsArrays(pokemonTypes),
                     'buttons': [
