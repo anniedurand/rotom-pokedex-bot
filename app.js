@@ -106,6 +106,8 @@ var newSearchMenu = {
 
 // MENUS HANDLER
 controller.on('facebook_postback', function(bot, message) {
+  var messageSplitPokedex = message.payload.split('^');
+  
   var messageSplit = message.payload.split('*');
   var onButtonPress = messageSplit[0];
   
@@ -113,6 +115,8 @@ controller.on('facebook_postback', function(bot, message) {
     var pokemonName = messageSplit[1];
     var pokemonChainUrl = messageSplit[2];
     var displayName = messageSplit[3];
+  } else if (messageSplitPokedex.length > 1) {
+    var pokedexIndex = messageSplitPokedex[1];
   }
   
   if (onButtonPress === 'evolution-button') {
@@ -142,6 +146,10 @@ controller.on('facebook_postback', function(bot, message) {
   else if (onButtonPress === 'help') {
     bot.reply(message, 'Sorry, this area still is in construction');
     // call help function
+  }
+  else if (onButtonPress === 'pokedex') {
+    // do something with pokedexIndex
+    // call function
   }
 });
 
@@ -260,12 +268,12 @@ function setPokedex(bot, message) {
                               var pokedexButtons = [];
                               var count = 0;
                               pokedexesArray.forEach(function(currentPokedex) {
-                                count++;
                                 var button = {
                                   type:'postback',
                                   title: currentPokedex,
-                                  payload:'pokedex*' + count
+                                  payload:'pokedex^' + count
                                 };
+                                count++;
                                 pokedexButtons.push(button);
                               });
                               
@@ -285,7 +293,6 @@ function setPokedex(bot, message) {
                               console.log(pokedexButtons)
                               console.log(pokedexesArray)
                               
-                              
                               if (pokedexesArray.length === count) {
                                 bot.startConversation(message, function(err, convo) {
                                   convo.say('I have found multiple Pokédexes for this game.');
@@ -294,7 +301,7 @@ function setPokedex(bot, message) {
                               }
                               
                             } else {
-                              userPokedex[message.user] = resultObject.pokedexes;
+                              userPokedex[message.user] = pokedexes;
                               bot.reply(message, 'You are currently playing Pokémon ' + displayGameName(currentGameName) + '. Pokédex now set to' + beautifyWordsArrays(pokedexesArray) + '.');
                             }
                           }
@@ -338,11 +345,21 @@ function searchPokemon(bot, message) {
           chosenPokemonId = Number(chosenPokemon);
         } else {
           bot.reply(message, 'Sorry, I didn\'t understand... Please say a number OR a name.');
+          // add menu ?
         }
         
         // finding the entry
         if (chosenPokemonId || chosenPokemonName) {
-          request('https://pokeapi.co/api/v2/pokedex/1/', function (err, result) {
+          var pokedex;
+          if (!userPokedex[message.user]) {
+            pokedex = 'https://pokeapi.co/api/v2/pokedex/1/';
+          } else {
+            pokedex = userPokedex[message.user][0].url;
+          }
+          
+          console.log(pokedex, 'pokedex');
+          
+          request(pokedex, function (err, result) {
             if (!err) {
               var resultObject = JSON.parse(result.body);
               var pokemon_entries = resultObject.pokemon_entries;
@@ -397,7 +414,7 @@ function displayFoundPokemon(bot, message, foundPokemon, pokemonName) {
       var pokemonChainUrl = resultObject.evolution_chain.url;
       
       if (nationalDexNo) {
-        request('https://pokeapi.co/api/v2/pokemon/' + nationalDexNo, function(err, result) {
+        request('https://pokeapi.co/api/v2/pokemon/' + nationalDexNo, function(err, result) {  // need to change the no. display according to chosen pokedex
           if (!err) {
             var displayName = resultObject.names[0].name;
             var isBaby = '';
