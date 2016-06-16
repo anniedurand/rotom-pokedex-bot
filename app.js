@@ -185,8 +185,7 @@ controller.on('facebook_postback', function(bot, message) {
     bot.reply(message, {attachment: mainMenuNext});
   } 
   else if (onButtonPress === 'search-type') {
-    bot.reply(message, 'Sorry, this area is still in construction');
-    // call type function
+    getType(bot, message);
   } 
   else if (onButtonPress === 'pokedexmenu') {
     if (userPokedex[message.user]) {
@@ -459,7 +458,7 @@ function getPokedex(bot, message) {
 
 // WHICH POKEMON ?
 
-controller.hears(['^pokemon$', 'search'], 'message_received', searchPokemon);
+controller.hears(['^pokemon$', '^search$'], 'message_received', searchPokemon);
 
 function searchPokemon(bot, message) {
   bot.startConversation(message, function(err, convo) {
@@ -613,15 +612,25 @@ function displayFoundPokemon(bot, message, foundPokemon, pokemonName, entry_numb
             });
           } else {
             bot.startConversation(message, function(err, convo) {
-              convo.say('Sorry, I couldn\'t find the Pokémon that you requested.');
-              convo.say({attachment: mainMenu});
+              if (!err) {
+                convo.say('Sorry, I couldn\'t find the Pokémon that you requested.');  // verify  -> server error?
+                convo.say({attachment: mainMenu});
+              } else {
+                bot.reply(message, 'error'); // verify
+                return;
+              }
             });
           }
         });
       } else {
         bot.startConversation(message, function(err, convo) {
-          convo.say('Sorry, I couldn\'t find the Pokémon that you requested.');
-          convo.say({attachment: mainMenu});
+          if (!err) {
+            convo.say('Sorry, I couldn\'t find the Pokémon that you requested.');
+            convo.say({attachment: mainMenu});
+          } else {
+            bot.reply(message, 'error'); // verify
+            return;
+          }
         });
       } 
     }
@@ -825,6 +834,143 @@ function sayEvolutionInfos(convo, details, current, evolved, evolutionInfos, dis
   
   convo.say(displayName + ' evolves to ' + evolved + trigger(details.trigger.name, details) + displayConditions(shouldDisplay));
   // find a nice separator (for multiple evolutions like Eevee).... stars ? '\u2606'
+}
+
+
+// GET TYPES INFO
+
+controller.hears('^type$', 'message_received', getType);
+
+function getType(bot, message) {
+  bot.startConversation(message, function(err, convo) {
+    if (!err) {
+      convo.ask('What type do you need information for?', function(response, convo) {
+        bot.reply(message, 'Okay, one second!');
+        var chosenType = response.text.toLowerCase();
+        
+        request('https://pokeapi.co/api/v2/type/', function (err, result) {
+          if (!err) {
+            var resultObject = JSON.parse(result.body);
+            var typesArray = resultObject.results;
+            var foundType = null;
+            
+            typesArray.forEach(function(type) {
+              if (type.name === chosenType) {
+                foundType = type.url;
+              }
+            });
+            
+            if (foundType !== null) {
+              request(foundType, function(err, result) {
+                if (!err) {
+                  var resultObject = JSON.parse(result.body);
+                  var damageRelations = resultObject.damage_relations;
+                  
+                  var halfDamageFrom = [];
+                  var noDamageFrom = [];
+                  var halfDamageTo = [];
+                  var doubleDamageFrom = [];
+                  var noDamageTo = [];
+                  var doubleDamageTo = [];
+                  
+                  if (damageRelations.half_damage_from.length > 0) {
+                    damageRelations.half_damage_from.forEach(function(type) {
+                      halfDamageFrom.push(type.name);
+                    });
+                  }
+                  if (damageRelations.no_damage_from.length > 0) {
+                    damageRelations.no_damage_from.forEach(function(type) {
+                      noDamageFrom.push(type.name);
+                    });
+                  }
+                  if (damageRelations.half_damage_to.length > 0) {
+                    damageRelations.half_damage_to.forEach(function(type) {
+                      halfDamageTo.push(type.name);
+                    });
+                  }
+                  if (damageRelations.double_damage_from.length > 0) {
+                    damageRelations.double_damage_from.forEach(function(type) {
+                      doubleDamageFrom.push(type.name);
+                    });
+                  }
+                  if (damageRelations.no_damage_to.length > 0) {
+                    damageRelations.no_damage_to.forEach(function(type) {
+                      noDamageTo.push(type.name);
+                    });
+                  }
+                  if (damageRelations.double_damage_to.length > 0) {
+                    damageRelations.double_damage_to.forEach(function(type) {
+                      doubleDamageTo.push(type.name);
+                    });
+                  }
+                  
+                  console.log(halfDamageFrom, 'halfDamageFrom') 
+                  console.log(noDamageFrom, 'noDamageFrom')
+                  console.log(halfDamageTo, 'halfDamageTo')
+                  console.log(doubleDamageFrom, 'doubleDamageFrom')
+                  console.log(noDamageTo, 'noDamageTo')
+                  console.log(doubleDamageTo, 'doubleDamageTo')
+                  
+                  displayTypeInfos(message, bot, chosenType, halfDamageFrom, noDamageFrom, doubleDamageFrom, halfDamageTo, noDamageTo, doubleDamageTo);
+                  
+                } else {
+                  bot.reply(message, 'error'); // verify
+                  return;
+                }
+              });
+            } else {
+              bot.reply(message, 'Sorry, I couldn\'t find the type that you requested.');  // verify
+              return;
+            }
+          } else {
+            bot.reply(message, 'error'); // verify
+            return;
+          }
+        });
+        convo.stop();
+      });
+    } else {
+      bot.reply(message, 'error'); // verify
+    }
+  });
+}
+
+
+// DISPLAY TYPES INFOS
+
+function displayTypeInfos(message, bot, chosenType, halfDamageFrom, noDamageFrom, doubleDamageFrom, halfDamageTo, noDamageTo, doubleDamageTo) {
+  var typeInfosGood = '';
+  var typeInfosBad = '';
+  
+  if (doubleDamageTo.length > 0) {
+    typeInfosGood += '\n• does double damage to' + beautifyWordsArrays(doubleDamageTo) + ' type(s)';
+  }
+  if (noDamageFrom.length > 0) {
+    typeInfosGood += '\n• takes no damage from' + beautifyWordsArrays(noDamageFrom) + ' type(s)';
+  }
+  if (halfDamageFrom.length > 0) {
+    typeInfosGood += '\n• takes half damage from' + beautifyWordsArrays(halfDamageFrom) + ' type(s)';
+  }
+  if (noDamageTo.length > 0) {
+    typeInfosBad += '\n• doesn\'t do any damage to' + beautifyWordsArrays(noDamageTo) + ' type(s)';
+  }
+  if (doubleDamageFrom.length > 0) {
+    typeInfosBad += '\n• takes double damage from' + beautifyWordsArrays(doubleDamageFrom) + ' type(s)';
+  }
+  if (halfDamageTo.length > 0) {
+    typeInfosBad += '\n• takes half damage to' + beautifyWordsArrays(halfDamageTo) + ' type(s)';
+  }
+  
+  bot.startConversation(message, function(err, convo) {
+    if (!err) {
+      convo.say('(y) ' + capitalizeFirst(chosenType) + '-type (y)\n' + typeInfosGood);
+      convo.say(':poop: ' + capitalizeFirst(chosenType) + '-type :poop:\n' + typeInfosBad);
+      convo.say({attachment: mainMenu});
+    } else {
+      bot.reply(message, 'error');  // verify
+      return;
+    }
+  });
 }
 
 
