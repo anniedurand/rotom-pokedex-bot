@@ -136,6 +136,12 @@ var newSearchMenu = {
 
 // MENUS HANDLER
 controller.on('facebook_postback', function(bot, message) {
+  var currentGameName;
+  
+  if (userCurrentGame[message.user]) {
+    currentGameName = userCurrentGame[message.user].name.split('-').join(' ');
+  }
+  
   var messageSplit = message.payload.split('*');
   var onButtonPress = messageSplit[0];
   
@@ -144,7 +150,7 @@ controller.on('facebook_postback', function(bot, message) {
     var pokemonChainUrl = messageSplit[2];
     var displayName = messageSplit[3];
   } else if (messageSplit.length === 3) {
-    var pokedexIndex = messageSplit[1];
+    var chosenPokedexUrl = messageSplit[1];
     var chosenPokedexName = messageSplit[2];
   }
   
@@ -172,32 +178,47 @@ controller.on('facebook_postback', function(bot, message) {
   else if (onButtonPress === 'pokedexmenu') {
     if (userPokedex[message.user]) {
       var name = userPokedex[message.user][0].name;
-      bot.reply(message, 'You are currently using the Pokédex for Pokémon ' + displayGameName(userCurrentGame[message.user].split('-').join(' ')) + ': ' + capitalizeFirst(splitJoin(name)) + '.');
+      bot.reply(message, 'You are currently using the Pokédex for Pokémon ' + displayGameName(currentGameName) + ': ' + capitalizeFirst(splitJoin(name)) + '.');
     } else {
       bot.reply(message, 'You are currently using the National Pokédex.');
     }
     bot.reply(message, {attachment: pokedexMenu});
   }
   else if (onButtonPress === 'set-pokedex') {
-    setPokedex(bot, message);
+    findGame(bot, message);
   } 
   else if (onButtonPress === 'keep-pokedex') {
     bot.startConversation(message, function(err, convo) {
-      convo.say('No problem!');
-      convo.say({attachment: mainMenu});
+      if (!err) {
+        convo.say('No problem!');
+        convo.say({attachment: mainMenu});
+      } else {
+        bot.reply(message, 'error'); // verify
+        return;
+      }
     });
   }
   else if (onButtonPress === 'default') {
     if (userPokedex[message.user]) {
       delete userPokedex[message.user];
       bot.startConversation(message, function(err, convo) {
-        convo.say('Alright, you are now using the National Pokédex.');
-        convo.say({attachment: mainMenu});
+        if (!err) {
+          convo.say('Alright, you are now using the National Pokédex.');
+          convo.say({attachment: mainMenu});
+        } else {
+          bot.reply(message, 'error'); // verify
+          return;
+        }
       });
     } else {
       bot.startConversation(message, function(err, convo) {
-        convo.say('You are already using the National Pokédex!');
-        convo.say({attachment: mainMenu});
+        if (!err) {
+          convo.say('You are already using the National Pokédex!');
+          convo.say({attachment: mainMenu});
+        } else {
+          bot.reply(message, 'error'); // verify
+          return;
+        }
       });
     }
   }
@@ -206,14 +227,17 @@ controller.on('facebook_postback', function(bot, message) {
     // call help function
   }
   else if (onButtonPress === 'pokedexchoice') {
-    var split = chosenPokedexName.toLowerCase().split(' ');
-    var name = split[1] + '-' + split[0];
-    console.log(name)
-    userPokedex[message.user] = [ { url: 'https://pokeapi.co/api/v2/pokedex/'+pokedexIndex+'/', name: name } ]
+    userPokedex[message.user] = [ { url: chosenPokedexUrl, name: chosenPokedexName } ];
     console.log(userPokedex[message.user])
+    
     bot.startConversation(message, function(err, convo) {
-      convo.say('Pokédex now set to ' + chosenPokedexName + '.');
-      convo.say({attachment: mainMenu});
+      if (!err) {
+        convo.say('Pokédex now set to ' + capitalizeFirst(splitJoin(chosenPokedexName)) + '.');
+        convo.say({attachment: mainMenu});
+      } else {
+        bot.reply(message, 'error'); // verify
+        return;
+      }
     });
   }
 });
@@ -225,13 +249,23 @@ controller.hears(['hello', '^hi$', '^yo$', '^hey$', 'what\'s up'], 'message_rece
   if (!userFirstRun[message.user]) {
     userFirstRun[message.user] = 'done';
     bot.startConversation(message, function(err, convo) {
-      convo.say('Hey there. Nice to meet you!');
-      convo.say({attachment: mainMenu});
+      if (!err) {
+        convo.say('Hey there. Nice to meet you!');
+        convo.say({attachment: mainMenu});
+      } else {
+        bot.reply(message, 'error'); // verify
+        return;
+      }
     });
   } else {
     bot.startConversation(message, function(err, convo) {
-      convo.say('Hello, nice to see you again!');
-      convo.say({attachment: mainMenu});
+      if (!err) {
+        convo.say('Hello, nice to see you again!');
+        convo.say({attachment: mainMenu});
+      } else {
+        bot.reply(message, 'error'); // verify
+        return;
+      }
     });
   }
 });
@@ -240,7 +274,12 @@ controller.hears(['hello', '^hi$', '^yo$', '^hey$', 'what\'s up'], 'message_rece
 // HELP SECTION
 controller.hears('^help$', 'message_received', function(bot, message) {
   bot.startConversation(message, function(err, convo) {
-    convo.say('I am a work in progress. Try saying "pokemon" or "hi"!');
+    if (!err) {
+      convo.say('I am a work in progress. Try saying "pokemon" or "hi"!');
+    } else {
+      bot.reply(message, 'error'); // verify
+      return;
+    }
   });
 });
 
@@ -250,20 +289,9 @@ controller.hears('^help$', 'message_received', function(bot, message) {
 var userCurrentGame = {};
 var userPokedex = {};
 
-controller.hears(['game', '^pokedex$'], 'message_received', setPokedex);
+controller.hears(['game', '^pokedex$'], 'message_received', findGame);
 
-function displayGameName(game) {
-  var array = game.split(' ');
-  if (array.length === 4) {
-    var first = array[0]+' '+array[1];
-    var second = array[2]+' '+array[3];
-    return capitalizeFirst(first + ' / ' + second);
-  } else {
-    return capitalizeFirst(array.join(' / '));
-  }
-}
-
-function setPokedex(bot, message) {
+function findGame(bot, message) {
   bot.startConversation(message, function(err, convo) {
     if (!err && !userCurrentGame[message.user]) {
       convo.ask('Which game are you currently playing?', function(response, convo) {
@@ -276,8 +304,7 @@ function setPokedex(bot, message) {
           userAnswer = userAnswer.split('pokémon ')[1];
         }
         
-        // REGEXP (to avoid having another game/multiple games as a result ('black 2' instead of 'black', etc.))
-        
+        // REGEXP (to avoid having another game/multiple games as a result ('black' instead of 'black 2', etc.))
         if (userAnswer === 'y') { 
           userAnswer = /\sy$/;
         } else if (userAnswer === 'x') {
@@ -298,95 +325,110 @@ function setPokedex(bot, message) {
           userAnswer = /^black white$/;
         }
         
+        // Fetching game info
         request('https://pokeapi.co/api/v2/version-group/', function (err, result) {
           if (!err) {
             var resultObject = JSON.parse(result.body);
             var versionGroup = resultObject.results;
             
+            // loop over each available game
             versionGroup.forEach(function(version) {
               var currentGameName = version.name.split('-').join(' ');
               console.log(currentGameName);
               
+              // compare user answer to available games. if found, save infos for that game
               if (currentGameName.search(userAnswer) !== -1 && currentGameName !== 'colosseum' && currentGameName !== 'xd') {    // ignoring Colosseum and XD
                 console.log('found! here is the url: ' + version.url);
-                userCurrentGame[message.user] = version.name;
-                
-                request(version.url, function(err, result) {
-                  if (!err) {
-                    var resultObject = JSON.parse(result.body);
-                    var pokedexes = resultObject.pokedexes;
-                    var pokedexesNameArray = [];
-
-                    var counter = pokedexes.length;
-                    
-                    if (pokedexes.length > 0) {
-                      pokedexes.forEach(function(pokedex) {
-                        request(pokedex.url, function(err, result) {
-                          counter--;
-                          console.log(pokedex)
-                          var resultObject = JSON.parse(result.body);
-                          var pokedexName = resultObject.names[resultObject.names.length -1].name;
-                          pokedexesNameArray.push(pokedexName);
-                          
-                          
-                          if (counter === 0) {
-                            if (pokedexesNameArray.length > 1) {
-                              var pokedexButtons = [];
-                              var count = 12;
-                              pokedexesNameArray.forEach(function(currentPokedex) {
-                                var button = {
-                                  type:'postback',
-                                  title: currentPokedex,
-                                  payload:'pokedexchoice*' + count + '*' + currentPokedex
-                                };
-                                count++;
-                                pokedexButtons.push(button);
-                              });
-                              
-                              var pokedexChoice = {
-                                'type':'template',
-                                'payload':{
-                                  'template_type':'generic',
-                                  'elements':[
-                                    {
-                                      'title': 'Which Pokédex should I use?',
-                                      'buttons': pokedexButtons
-                                    }
-                                  ]
-                                }
-                              }; 
-                              
-                              console.log(pokedexButtons)
-                              console.log(pokedexesNameArray)
-                              
-                              if (pokedexesNameArray.length > 1) {
-                                bot.startConversation(message, function(err, convo) {
-                                  convo.say('You are currently playing Pokémon ' + displayGameName(currentGameName) + '.');
-                                  convo.say('I have found multiple available Pokédex for this game.');
-                                  convo.say({attachment: pokedexChoice});
-                                });
-                              }
-                              
-                            } else {
-                              userPokedex[message.user] = pokedexes;
-                              console.log(pokedexes)
-                              bot.startConversation(message, function(err, convo) {
-                                convo.say('You are currently playing Pokémon ' + displayGameName(currentGameName) + '. Pokédex now set to' + beautifyWordsArrays(pokedexesNameArray) + '.');
-                                convo.say({attachment: mainMenu})
-                              });
-                            }
-                          }
-                        });
-                      });
-                    }
-                  }
-                });
+                userCurrentGame[message.user] = version;
               }
             });
+            
+            // if game infos saved
+            if (userCurrentGame[message.user]) {
+              getPokedex(bot, message);  // call next function
+            }
+          } else {
+            bot.reply(message, 'error'); // verify
+            return;
           }
         });
         convo.stop();
       });
+    } else {
+      bot.reply(message, 'error');
+      return;
+      // else if error or pokedex already set: do something - verify
+    }
+  });
+}
+
+
+// GET POKEDEX for the current game
+
+function getPokedex(bot, message) {
+  var currentGameName = userCurrentGame[message.user].name.split('-').join(' ');
+  
+  // requesting game version
+  request(userCurrentGame[message.user].url, function(err, result) {
+    if (!err) {
+      var resultObject = JSON.parse(result.body);
+      var pokedexes = resultObject.pokedexes;
+      console.log(pokedexes, 'pokedexes')
+      
+      // if only 1 pokedex available for that game
+      if (pokedexes.length === 1) {
+        userPokedex[message.user] = pokedexes;   // assign pokedex to user
+        bot.startConversation(message, function(err, convo) {
+          if (!err) {
+            convo.say('You are currently playing Pokémon ' + displayGameName(currentGameName) + '. Pokédex now set to ' + capitalizeFirst(splitJoin(pokedexes[0].name)) + '.');
+            convo.say({attachment: mainMenu});
+          } else {
+            bot.reply(message, 'error'); // verify
+            return;
+          }
+        });
+      } 
+      // if multiple pokedexes available for one game
+      else if (pokedexes.length > 1) {
+        var pokedexButtons = [];
+        
+        pokedexes.forEach(function(pokedex) {
+          var pokedexName = capitalizeFirst(splitJoin(pokedex.name));
+          var button = {
+            type:'postback',
+            title: pokedexName,
+            payload:'pokedexchoice*' + pokedex.url + '*' + pokedex.name
+          };
+          pokedexButtons.push(button);
+        });
+        
+        var pokedexChoice = {
+          'type':'template',
+          'payload':{
+            'template_type':'generic',
+            'elements':[
+              {
+                'title': 'Which Pokédex should I use?',
+                'buttons': pokedexButtons
+              }
+            ]
+          }
+        }; 
+        
+        bot.startConversation(message, function(err, convo) {
+          if (!err) {
+            convo.say('You are currently playing Pokémon ' + displayGameName(currentGameName) + '.');
+            convo.say('I have found multiple available Pokédex for this game.');
+            convo.say({attachment: pokedexChoice});
+          } else {
+            bot.reply(message, 'error'); // verify
+            return;
+          }
+        });
+      }
+    } else {
+      bot.reply(message, 'error'); // verify
+      return;
     }
   });
 }
@@ -458,8 +500,13 @@ function searchPokemon(bot, message) {
               
               if (foundPokemon === null) {
                 bot.startConversation(message, function(err, convo) {
-                  convo.say('Sorry, I couldn\'t find the Pokémon that you requested.');
-                  convo.say({attachment: mainMenu});
+                  if (!err) {
+                    convo.say('Sorry, I couldn\'t find the Pokémon that you requested.');
+                    convo.say({attachment: mainMenu});
+                  } else {
+                    bot.reply(message, 'error'); // verify
+                    return;
+                  }
                 });
               }
               
@@ -467,7 +514,8 @@ function searchPokemon(bot, message) {
               console.log(chosenPokemonName)
               console.log(foundPokemon)
             } else {
-              // catch error
+              bot.reply(message, 'error'); // verify
+              return;
             }
           });
         }
@@ -652,6 +700,17 @@ function evolutionChain(bot, message, pokemonName, pokemonChainUrl, displayName)
   });
 }
 
+function displayGameName(game) {
+  var array = game.split(' ');
+  if (array.length === 4) {
+    var first = array[0]+' '+array[1];
+    var second = array[2]+' '+array[3];
+    return capitalizeFirst(first + ' / ' + second);
+  } else {
+    return capitalizeFirst(array.join(' / '));
+  }
+}
+
 function beautifyWordsArrays(array) {
   var newArray = array.map(function(item) {
     var words = [];
@@ -765,137 +824,5 @@ function sayEvolutionInfos(convo, details, current, evolved, evolutionInfos, dis
   }
   
   convo.say(displayName + ' evolves to ' + evolved + trigger(details.trigger.name, details) + displayConditions(shouldDisplay));
-  
   // find a nice separator (for multiple evolutions like Eevee).... stars ? '\u2606'
 }
-
-
-
-
-// function setPokedex(bot, message) {
-//   bot.startConversation(message, function(err, convo) {
-//     if (!err && !userCurrentGame[message.user]) {
-//       convo.ask('Which game are you currently playing?', function(response, convo) {
-//         var userAnswer = response.text.toLowerCase();
-        
-//         // if 'pokemon' is in the answer, remove it
-//         if (userAnswer.indexOf('pokemon') !== -1) {
-//           userAnswer = userAnswer.split('pokemon ')[1];
-//         } else if (userAnswer.indexOf('pokémon') !== -1) {
-//           userAnswer = userAnswer.split('pokémon ')[1];
-//         }
-        
-//         // REGEXP (to avoid having another game/multiple games as a result ('black 2' instead of 'black', etc.))
-        
-//         if (userAnswer === 'y') { 
-//           userAnswer = /\sy$/;
-//         } else if (userAnswer === 'x') {
-//           userAnswer = /^x\s/;
-//         } else if (userAnswer === 'ruby') {
-//           userAnswer = /^ruby\s/;
-//         } else if (userAnswer === 'red') {
-//           userAnswer = /^red\s/;
-//         } else if (userAnswer === 'gold') {
-//           userAnswer = /^gold\s/;
-//         } else if (userAnswer === 'silver') {
-//           userAnswer = /\ssilver$/;
-//         } else if (userAnswer === 'white') {
-//           userAnswer = /\swhite$/;
-//         } else if (userAnswer === 'sapphire') {
-//           userAnswer = /^ruby sapphire$/;
-//         } else if (userAnswer === 'black') {
-//           userAnswer = /^black white$/;
-//         }
-        
-//         request('https://pokeapi.co/api/v2/version-group/', function (err, result) {
-//           if (!err) {
-//             var resultObject = JSON.parse(result.body);
-//             var versionGroup = resultObject.results;
-            
-//             versionGroup.forEach(function(version) {
-//               var currentGameName = version.name.split('-').join(' ');
-//               console.log(currentGameName);
-              
-//               if (currentGameName.search(userAnswer) !== -1 && currentGameName !== 'colosseum' && currentGameName !== 'xd') {    // ignoring Colosseum and XD
-//                 console.log('found! here is the url: ' + version.url);
-//                 userCurrentGame[message.user] = version.name;
-                
-//                 request(version.url, function(err, result) {
-//                   if (!err) {
-//                     var resultObject = JSON.parse(result.body);
-//                     var pokedexes = resultObject.pokedexes;
-//                     var pokedexesNameArray = [];
-
-//                     var counter = pokedexes.length;
-                    
-//                     if (pokedexes.length > 0) {
-//                       pokedexes.forEach(function(pokedex) {
-//                         request(pokedex.url, function(err, result) {
-//                           counter--;
-//                           console.log(pokedex)
-//                           var resultObject = JSON.parse(result.body);
-//                           var pokedexName = resultObject.names[resultObject.names.length -1].name;
-//                           pokedexesNameArray.push(pokedexName);
-                          
-                          
-//                           if (counter === 0) {
-//                             if (pokedexesNameArray.length > 1) {
-//                               var pokedexButtons = [];
-//                               var count = 12;
-//                               pokedexesNameArray.forEach(function(currentPokedex) {
-//                                 var button = {
-//                                   type:'postback',
-//                                   title: currentPokedex,
-//                                   payload:'pokedex*' + count + '*' + currentPokedex
-//                                 };
-//                                 count++;
-//                                 pokedexButtons.push(button);
-//                               });
-                              
-//                               var pokedexChoice = {
-//                                 'type':'template',
-//                                 'payload':{
-//                                   'template_type':'generic',
-//                                   'elements':[
-//                                     {
-//                                       'title': 'Which Pokédex should I use?',
-//                                       'buttons': pokedexButtons
-//                                     }
-//                                   ]
-//                                 }
-//                               }; 
-                              
-//                               console.log(pokedexButtons)
-//                               console.log(pokedexesNameArray)
-                              
-//                               if (pokedexesNameArray.length > 1) {
-//                                 bot.startConversation(message, function(err, convo) {
-//                                   convo.say('You are currently playing Pokémon ' + displayGameName(currentGameName) + '.');
-//                                   convo.say('I have found multiple available Pokédex for this game.');
-//                                   convo.say({attachment: pokedexChoice});
-//                                 });
-//                               }
-                              
-//                             } else {
-//                               userPokedex[message.user] = pokedexes;
-//                               console.log(pokedexes)
-//                               bot.startConversation(message, function(err, convo) {
-//                                 convo.say('You are currently playing Pokémon ' + displayGameName(currentGameName) + '. Pokédex now set to' + beautifyWordsArrays(pokedexesNameArray) + '.');
-//                                 convo.say({attachment: mainMenu})
-//                               });
-//                             }
-//                           }
-//                         });
-//                       });
-//                     }
-//                   }
-//                 });
-//               }
-//             });
-//           }
-//         });
-//         convo.stop();
-//       });
-//     }
-//   });
-// }
