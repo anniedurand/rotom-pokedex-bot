@@ -685,16 +685,7 @@ function evolutionChain(bot, message, pokemonName, pokemonChainUrl, displayName)
             evoLevelTwoArray.forEach(function(pokemon) {
               var evolved = capitalizeFirst(splitJoin(pokemon.species.name));
               var details = pokemon.evolution_details;  //   check if only for locations? also potential feature: display only if location is in current game
-              // var evolution_details = pokemon.evolution_details;
-              // var locationsArray = [];
-              // if (evolution_details.length > 1) {
-              //   if (evolution_details[0].location.name !== null) {
-              //     evolution_details.forEach(function(index) {
-              //       var locationFound = ' ' + capitalizeFirst(splitJoin(index.location.name));
-              //       locationsArray.push(locationFound);
-              //     });
-              //   }
-              // }
+              
               sayEvolutionInfos(convo, details, current, evolved, evolutionInfos, displayName);//, locationsArray);
             });
             convo.say({attachment: newSearchMenu});
@@ -711,15 +702,6 @@ function evolutionChain(bot, message, pokemonName, pokemonChainUrl, displayName)
             evoLevelThreeArray.forEach(function(pokemon) {
               var evolved = capitalizeFirst(splitJoin(pokemon.species.name));
               var details = pokemon.evolution_details;  //   check if only for locations? also potential feature: display only if location is in current game
-              
-              // var evolution_details = pokemon.evolution_details;
-              // var locationsArray = [];
-              // if (evoution_details.length > 1) {
-              //   evolution_details.forEach(function(index) {
-              //     var locationFound = ' ' + capitalizeFirst(splitJoin(index.location.name));
-              //     locationsArray.push(locationFound);
-              //   });
-              // }
               
               sayEvolutionInfos(convo, details, current, evolved, evolutionInfos, displayName);//, locationsArray);
             });
