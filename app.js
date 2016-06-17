@@ -726,13 +726,13 @@ function evolutionChain(bot, message, pokemonName, pokemonChainUrl, displayName)
           
           else if (secondLevel.indexOf(current) !== -1 && thirdLevel.length === 0) {  // if the current pokemon is the second in the chain and there is no third level
             convo.say(capitalizeFirst(splitJoin(first)) + ' \u21e8 ' + beautifyWordsArrays(secondLevel));
-            convo.say(displayName + ' is at it\'s final evolution stage.');
+            convo.say(displayName + ' is at its final evolution stage.');
             convo.say({attachment: newSearchMenu});
           } 
           
           else if (thirdLevel.indexOf(current) !== -1) {
             convo.say(capitalizeFirst(splitJoin(first)) + ' \u21e8 ' + beautifyWordsArrays(secondLevel) + ' \u21e8 ' + beautifyWordsArrays(thirdLevel));
-            convo.say(displayName + ' is at it\'s final evolution stage.');
+            convo.say(displayName + ' is at its final evolution stage.');
             convo.say({attachment: newSearchMenu});
           }
         } else {
