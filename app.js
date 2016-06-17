@@ -684,9 +684,9 @@ function evolutionChain(bot, message, pokemonName, pokemonChainUrl, displayName)
             
             evoLevelTwoArray.forEach(function(pokemon) {
               var evolved = capitalizeFirst(splitJoin(pokemon.species.name));
-              var details = pokemon.evolution_details;  //   check if only for locations? also potential feature: display only if location is in current game
+              var details = pokemon.evolution_details;
               
-              sayEvolutionInfos(convo, details, current, evolved, evolutionInfos, displayName);//, locationsArray);
+              sayEvolutionInfos(convo, details, current, evolved, evolutionInfos, displayName);
             });
             convo.say({attachment: newSearchMenu});
           } 
@@ -701,9 +701,9 @@ function evolutionChain(bot, message, pokemonName, pokemonChainUrl, displayName)
             
             evoLevelThreeArray.forEach(function(pokemon) {
               var evolved = capitalizeFirst(splitJoin(pokemon.species.name));
-              var details = pokemon.evolution_details;  //   check if only for locations? also potential feature: display only if location is in current game
+              var details = pokemon.evolution_details; 
               
-              sayEvolutionInfos(convo, details, current, evolved, evolutionInfos, displayName);//, locationsArray);
+              sayEvolutionInfos(convo, details, current, evolved, evolutionInfos, displayName);
             });
             convo.say({attachment: newSearchMenu});
           } 
@@ -814,31 +814,31 @@ function sayEvolutionInfos(convo, details, current, evolved, evolutionInfos, dis
     }
     if (detail.location) {
       var locationsArray = [];
-      if (details.length > 1) {
-        details.forEach(function(detail2) {
-          if (detail2.min_level === detail.min_level 
-            && detail2.min_beauty === detail.min_beauty
-            && detail2.time_of_day === detail.time_of_day
-            && detail2.gender === detail.gender
-            && detail2.relative_physical_stats === detail.relative_physical_stats
-            && detail2.needs_overworld_rain === detail.needs_overworld_rain
-            && detail2.turn_upside_down === detail.turn_upside_down
-            && detail2.item === detail.item
-            && detail2.known_move_type === detail.known_move_type
-            && detail2.min_affection === detail.min_affection
-            && detail2.party_type === detail.party_type
-            && detail2.trade_species === detail.trade_species
-            && detail2.party_species === detail.party_species
-            && detail2.min_happiness === detail.min_happiness
-            && detail2.held_item === detail.held_item
-            && detail2.known_move === detail.known_move
-            && detail2 !== detail) {
-            detail2.visited = true;
-            locationsArray.push(detail2.location.name);
-          }
-        });
-        locationsArray.push(detail.location.name);
-      }
+      
+      details.forEach(function(detail2) {
+        if (detail2.min_level === detail.min_level 
+          && detail2.min_beauty === detail.min_beauty
+          && detail2.time_of_day === detail.time_of_day
+          && detail2.gender === detail.gender
+          && detail2.relative_physical_stats === detail.relative_physical_stats
+          && detail2.needs_overworld_rain === detail.needs_overworld_rain
+          && detail2.turn_upside_down === detail.turn_upside_down
+          && detail2.item === detail.item
+          && detail2.known_move_type === detail.known_move_type
+          && detail2.min_affection === detail.min_affection
+          && detail2.party_type === detail.party_type
+          && detail2.trade_species === detail.trade_species
+          && detail2.party_species === detail.party_species
+          && detail2.min_happiness === detail.min_happiness
+          && detail2.held_item === detail.held_item
+          && detail2.known_move === detail.known_move
+          && detail2 !== detail) {
+          detail2.visited = true;
+          locationsArray.push(detail2.location.name);
+        }
+      });
+      locationsArray.push(detail.location.name);
+        
       conditions += '\n• while being located in either:' + beautifyWordsArrays(locationsArray);
     }
     
