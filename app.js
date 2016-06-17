@@ -349,15 +349,19 @@ function findGame(bot, message) {
             if (!err) {
               var resultObject = JSON.parse(result.body);
               var versionGroup = resultObject.results;
+              var gameFound = false;
+              var counter = versionGroup.length;
               
               // loop over each available game
               versionGroup.forEach(function(version) {
                 var currentGameName = version.name.split('-').join(' ');
+                counter--;
                 console.log(currentGameName);
                 
                 // compare user answer to available games. if found, save infos for that game
                 if (currentGameName.search(userAnswer) !== -1 && currentGameName !== 'colosseum' && currentGameName !== 'xd') {    // ignoring Colosseum and XD
                   console.log('found! here is the url: ' + version.url);
+                  gameFound = true;
                   userCurrentGame[message.user] = version;
                 }
               });
@@ -365,9 +369,12 @@ function findGame(bot, message) {
               // if game infos saved
               if (userCurrentGame[message.user]) {
                 getPokedex(bot, message);  // call next function
+              } else if (gameFound === false && counter === 0) {
+                bot.reply(message, 'Sorry, I couldn\'t find the game that you requested.');
+                bot.reply(message, {attachment: mainMenu});
               }
             } else {
-              bot.reply(message, 'error'); // verify
+              bot.reply(message, 'server error'); // verify
               return;
             }
           });
