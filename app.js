@@ -684,16 +684,18 @@ function evolutionChain(bot, message, pokemonName, pokemonChainUrl, displayName)
             
             evoLevelTwoArray.forEach(function(pokemon) {
               var evolved = capitalizeFirst(splitJoin(pokemon.species.name));
-              var details = pokemon.evolution_details[0];  //   check if only for locations? also potential feature: display only if location is in current game
-              var evolution_details = pokemon.evolution_details;
-              var locationsArray = [];
-              if (evolution_details.length > 1) {
-                evolution_details.forEach(function(index) {
-                  var locationFound = ' ' + capitalizeFirst(splitJoin(index.location.name));
-                  locationsArray.push(locationFound);
-                });
-              }
-              sayEvolutionInfos(convo, details, current, evolved, evolutionInfos, displayName, locationsArray);
+              var details = pokemon.evolution_details;  //   check if only for locations? also potential feature: display only if location is in current game
+              // var evolution_details = pokemon.evolution_details;
+              // var locationsArray = [];
+              // if (evolution_details.length > 1) {
+              //   if (evolution_details[0].location.name !== null) {
+              //     evolution_details.forEach(function(index) {
+              //       var locationFound = ' ' + capitalizeFirst(splitJoin(index.location.name));
+              //       locationsArray.push(locationFound);
+              //     });
+              //   }
+              // }
+              sayEvolutionInfos(convo, details, current, evolved, evolutionInfos, displayName);//, locationsArray);
             });
             convo.say({attachment: newSearchMenu});
           } 
@@ -708,18 +710,18 @@ function evolutionChain(bot, message, pokemonName, pokemonChainUrl, displayName)
             
             evoLevelThreeArray.forEach(function(pokemon) {
               var evolved = capitalizeFirst(splitJoin(pokemon.species.name));
-              var details = pokemon.evolution_details[0];  //   check if only for locations? also potential feature: display only if location is in current game
+              var details = pokemon.evolution_details;  //   check if only for locations? also potential feature: display only if location is in current game
               
-              var evolution_details = pokemon.evolution_details;
-              var locationsArray = [];
-              if (evolution_details.length > 1) {
-                evolution_details.forEach(function(index) {
-                  var locationFound = ' ' + capitalizeFirst(splitJoin(index.location.name));
-                  locationsArray.push(locationFound);
-                });
-              }
+              // var evolution_details = pokemon.evolution_details;
+              // var locationsArray = [];
+              // if (evoution_details.length > 1) {
+              //   evolution_details.forEach(function(index) {
+              //     var locationFound = ' ' + capitalizeFirst(splitJoin(index.location.name));
+              //     locationsArray.push(locationFound);
+              //   });
+              // }
               
-              sayEvolutionInfos(convo, details, current, evolved, evolutionInfos, displayName, locationsArray);
+              sayEvolutionInfos(convo, details, current, evolved, evolutionInfos, displayName);//, locationsArray);
             });
             convo.say({attachment: newSearchMenu});
           } 
@@ -750,13 +752,13 @@ function evolutionChain(bot, message, pokemonName, pokemonChainUrl, displayName)
 
 // EVOLUTION TRIGGERS
 
-function trigger(triggerType, details) {
+function trigger(triggerType, detail) {
   if (triggerType === 'level-up') {
     return ' by leveling up'; 
   } else if (triggerType === 'trade') {
     return ' after being traded with another player';
   } else if (triggerType === 'use-item') {
-    return ' by being exposed to: ' + splitJoin(details.item.name);
+    return ' by being exposed to: ' + splitJoin(detail.item.name);
   } else if (triggerType === 'shed') {
     return ' by shedding (?)'; // ? change this  
   }
@@ -765,81 +767,106 @@ function trigger(triggerType, details) {
 
 // EVOLUTION CONDITIONS DISPLAY
 
-function sayEvolutionInfos(convo, details, current, evolved, evolutionInfos, displayName, locationsArray) {
-  var conditions = ':';
-  var shouldDisplay = false;
-  
-  function displayConditions(bool) {
-    if (bool === true) {
-      return conditions;
-    } else {
-      return '.';
+function sayEvolutionInfos(convo, details, current, evolved, evolutionInfos, displayName) {
+
+  details.forEach(function(detail) {
+    if (detail.visited) {
+      return;
     }
-  }
-  
-  if (details.min_level) {
-    conditions += '\n• at level ' + details.min_level;
-  }
-  if (details.min_beauty) {
-    conditions += '\n• while having a beauty level of at least: ' + details.min_beauty;
-  }
-  if (details.time_of_day.length > 1) {
-    conditions += '\n• during the ' + details.time_of_day;
-  }
-  if (details.gender) {
-    var gender;
-    if (details.gender === 1) {
-      gender = 'female';
-    } else if (details.gender === 2) {
-      gender = 'male';
+    
+    var conditions = ':';
+    
+    if (detail.min_level) {
+      conditions += '\n• at level ' + detail.min_level;
     }
-    conditions += '\n• it\'s gender must be: ' + gender;
-  }
-  if (details.relative_physical_stats) {
-    conditions += '\n• phys. stats: ' + details.relative_physical_stats; // verify
-  }
-  if (details.needs_overworld_rain) {
-    conditions += '\n• while it\'s raining in the overworld';
-  }
-  if (details.turn_upside_down) {
-    conditions += '\n• you have to turn your 3DS upside down';  // verify
-  }
-  if (details.item) {
-    conditions += '\n• using this item: ' + splitJoin(details.item.name);  // might not be needed if only comes up with item evolution trigger
-  }
-  if (details.known_move_type) {
-    conditions += '\n• while knowing a ' + splitJoin(details.known_move_type.name) + '-type move';
-  }
-  if (details.min_affection) {
-    conditions += '\n• while having at least ' + details.min_affection + ' affection hearts in Pokémon-Amie';
-  }
-  if (details.party_type) {
-    conditions += '\n• party type: ' + details.party_type;  // verify
-  }
-  if (details.trade_species) {
-    conditions += '\n• trade_species: ' + details.trade_species; // verify
-  }
-  if (details.party_species) {
-    conditions += '\n• while having a ' + capitalizeFirst(details.party_species.name) + ' in your party';
-  }
-  if (details.min_happiness) {
-    conditions += '\n• with a minimum happiness level of ' + details.min_happiness;  // verify
-  }
-  if (details.held_item) {
-    conditions += '\n• while holding: ' + capitalizeFirst(splitJoin(details.held_item.name)); // verify
-  }
-  if (details.known_move) {
-    conditions += '\n• while knowing the move: ' + capitalizeFirst(splitJoin(details.known_move.name)); 
-  }
-  if (locationsArray.length > 0) {
-    conditions += '\n• while being located in either:' + locationsArray;
-  }
+    if (detail.min_beauty) {
+      conditions += '\n• while having a beauty level of at least: ' + detail.min_beauty;
+    }
+    if (detail.time_of_day.length > 1) {
+      conditions += '\n• during the ' + detail.time_of_day;
+    }
+    if (detail.gender) {
+      var gender;
+      if (detail.gender === 1) {
+        gender = 'female';
+      } else if (detail.gender === 2) {
+        gender = 'male';
+      }
+      conditions += '\n• it\'s gender must be: ' + gender;
+    }
+    if (detail.relative_physical_stats) {
+      conditions += '\n• phys. stats: ' + detail.relative_physical_stats; // verify
+    }
+    if (detail.needs_overworld_rain) {
+      conditions += '\n• while it\'s raining in the overworld';
+    }
+    if (detail.turn_upside_down) {
+      conditions += '\n• you have to turn your 3DS upside down';  // verify
+    }
+    if (detail.item) {
+      conditions += '\n• using this item: ' + splitJoin(detail.item.name);  // might not be needed if only comes up with item evolution trigger
+    }
+    if (detail.known_move_type) {
+      conditions += '\n• while knowing a ' + splitJoin(detail.known_move_type.name) + '-type move';
+    }
+    if (detail.min_affection) {
+      conditions += '\n• while having at least ' + detail.min_affection + ' affection hearts in Pokémon-Amie';
+    }
+    if (detail.party_type) {
+      conditions += '\n• party type: ' + detail.party_type;  // verify
+    }
+    if (detail.trade_species) {
+      conditions += '\n• trade_species: ' + detail.trade_species; // verify
+    }
+    if (detail.party_species) {
+      conditions += '\n• while having a ' + capitalizeFirst(detail.party_species.name) + ' in your party';
+    }
+    if (detail.min_happiness) {
+      conditions += '\n• with a minimum happiness level of ' + detail.min_happiness;  // verify
+    }
+    if (detail.held_item) {
+      conditions += '\n• while holding: ' + capitalizeFirst(splitJoin(detail.held_item.name)); // verify
+    }
+    if (detail.known_move) {
+      conditions += '\n• while knowing the move: ' + capitalizeFirst(splitJoin(detail.known_move.name)); 
+    }
+    if (detail.location) {
+      var locationsArray = [];
+      if (details.length > 1) {
+        details.forEach(function(detail2) {
+          if (detail2.min_level === detail.min_level 
+            && detail2.min_beauty === detail.min_beauty
+            && detail2.time_of_day === detail.time_of_day
+            && detail2.gender === detail.gender
+            && detail2.relative_physical_stats === detail.relative_physical_stats
+            && detail2.needs_overworld_rain === detail.needs_overworld_rain
+            && detail2.turn_upside_down === detail.turn_upside_down
+            && detail2.item === detail.item
+            && detail2.known_move_type === detail.known_move_type
+            && detail2.min_affection === detail.min_affection
+            && detail2.party_type === detail.party_type
+            && detail2.trade_species === detail.trade_species
+            && detail2.party_species === detail.party_species
+            && detail2.min_happiness === detail.min_happiness
+            && detail2.held_item === detail.held_item
+            && detail2.known_move === detail.known_move
+            && detail2 !== detail) {
+            detail2.visited = true;
+            locationsArray.push(detail2.location.name);
+          }
+        });
+        locationsArray.push(detail.location.name);
+      }
+      conditions += '\n• while being located in either:' + beautifyWordsArrays(locationsArray);
+    }
+    
+    if (conditions.length === 0) {
+      conditions = '.';
+    }
+    
+    convo.say(displayName + ' evolves to ' + evolved + trigger(detail.trigger.name, detail) + conditions);
+  });
   
-  if (conditions.length > 1) {
-    shouldDisplay = true;
-  }
-  
-  convo.say(displayName + ' evolves to ' + evolved + trigger(details.trigger.name, details) + displayConditions(shouldDisplay));
   // find a nice separator (for multiple evolutions like Eevee).... stars ? '\u2606'
 }
 
@@ -1036,8 +1063,10 @@ function reverseSplitJoin(sentence) {
 // TO DO LIST:
 /* 
   - controller.hears for everything else that is not a command and bring up the main menu?
-  - display location (evolution trigger) only for current game
+  - display location (evolution trigger) only for current game ?
   - test with multiple users
   - read me
   - test more pokemon evolutions (triggers / conditions) 
+  - encounter locations ? - not sure if possible
+  - evolution items location ? - not sure if possible
 */
