@@ -471,7 +471,7 @@ controller.hears(['^pokemon$', '^pokémon$', '^search$'], 'message_received', se
 function searchPokemon(bot, message) {
   bot.startConversation(message, function(err, convo) {
     if (!err) {
-      convo.ask('Which Pokémon would you like to know more about? Say it\'s name or Pokédex entry number.', function(response, convo) {
+      convo.ask('Which Pokémon would you like to know more about? Say its name or Pokédex entry number.', function(response, convo) {
         bot.reply(message, 'Alright, please wait while I look through my files.');
         
         var chosenPokemon = response.text;
@@ -988,7 +988,7 @@ function displayTypeInfos(message, bot, chosenType, halfDamageFrom, noDamageFrom
     typeInfosBad += '\n• takes double damage from' + beautifyWordsArrays(doubleDamageFrom) + ' type(s)';
   }
   if (halfDamageTo.length > 0) {
-    typeInfosBad += '\n• takes half damage to' + beautifyWordsArrays(halfDamageTo) + ' type(s)';
+    typeInfosBad += '\n• does half damage to' + beautifyWordsArrays(halfDamageTo) + ' type(s)';
   }
   
   bot.startConversation(message, function(err, convo) {
