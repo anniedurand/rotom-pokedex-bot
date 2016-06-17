@@ -26,11 +26,14 @@ Rotom Pokédex Bot can **find any Pokémon** through **any Pokédex** of a given
 
 All the functions are available through menus, though they can also be called by saying things like "pokemon", "pokedex", "type", "help". To access the main menu, simply say "hi" or "hello".
 
-![screenshot 1](img/1.png?raw=true) ![screenshot 2](img/2.png?raw=true) ![screenshot 3](img/3.png?raw=true) ![screenshot 4](img/4.png?raw=true) ![screenshot 5](img/5.png?raw=true)
+![screenshot 1](img/1.png?raw=true) ![screenshot 2](img/2.png?raw=true) ![screenshot 3](img/3.png?raw=true) 
+
+![screenshot 4](img/4.png?raw=true) ![screenshot 5](img/5.png?raw=true)
 
 ## <a name="3">Behind the Bot</a>
 
 This bot was developed using [Botkit](https://howdy.ai/botkit/) in Node.js.
+
 It also couldn't have been possible to make if it wasn't for the [PokéAPI](http://pokeapi.co/) (thank you!!!)
 
 Other technologies used: 
