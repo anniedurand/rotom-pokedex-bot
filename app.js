@@ -726,13 +726,13 @@ function evolutionChain(bot, message, pokemonName, pokemonChainUrl, displayName)
           
           else if (secondLevel.indexOf(current) !== -1 && thirdLevel.length === 0) {  // if the current pokemon is the second in the chain and there is no third level
             convo.say(capitalizeFirst(splitJoin(first)) + ' \u21e8 ' + beautifyWordsArrays(secondLevel));
-            convo.say(displayName + ' is at it\'s final evolution stage.');
+            convo.say(displayName + ' is at its final evolution stage.');
             convo.say({attachment: newSearchMenu});
           } 
           
           else if (thirdLevel.indexOf(current) !== -1) {
             convo.say(capitalizeFirst(splitJoin(first)) + ' \u21e8 ' + beautifyWordsArrays(secondLevel) + ' \u21e8 ' + beautifyWordsArrays(thirdLevel));
-            convo.say(displayName + ' is at it\'s final evolution stage.');
+            convo.say(displayName + ' is at its final evolution stage.');
             convo.say({attachment: newSearchMenu});
           }
         } else {
@@ -787,7 +787,13 @@ function sayEvolutionInfos(convo, details, current, evolved, evolutionInfos, dis
     conditions += '\n• during the ' + details.time_of_day;
   }
   if (details.gender) {
-    conditions += '\n• it\'s gender must be: ' + details.gender;  // verify
+    var gender;
+    if (details.gender === 1) {
+      gender = 'female';
+    } else if (details.gender === 2) {
+      gender = 'male';
+    }
+    conditions += '\n• it\'s gender must be: ' + gender;
   }
   if (details.relative_physical_stats) {
     conditions += '\n• phys. stats: ' + details.relative_physical_stats; // verify
