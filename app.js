@@ -849,7 +849,7 @@ function sayEvolutionInfos(convo, details, current, evolved, evolutionInfos, dis
       conditions += '\n• while being located in either:' + beautifyWordsArrays(locationsArray);
     }
     
-    if (conditions.length === 0) {
+    if (conditions.length === 1) {
       conditions = '.';
     }
     
