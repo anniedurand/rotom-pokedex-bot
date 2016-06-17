@@ -258,7 +258,7 @@ controller.on('facebook_postback', function(bot, message) {
 
 var userFirstRun = {};
 
-controller.hears(['hello', '^hi$', '^yo$', '^hey$', 'what\'s up'], 'message_received', function(bot, message) {  // NOTE: Change dialog, add user nickname question linked with database
+controller.hears(['^hello$', '^hi$', '^yo$', '^hey$', 'what\'s up'], 'message_received', function(bot, message) {  // NOTE: Change dialog, add user nickname question linked with database
   if (!userFirstRun[message.user]) {
     userFirstRun[message.user] = 'done';
     bot.startConversation(message, function(err, convo) {
@@ -291,8 +291,8 @@ controller.hears('^help$', 'message_received', sendHelp);
 function sendHelp(bot, message) {
   bot.startConversation(message, function(err, convo) {
     if (!err) {
-      convo.say('I heard that you want to know more about me? :) \nI am a bot made to assist Pokémon trainers like you, on a quest to catch \'em all! \n\nI can find any Pokémon through any Pokédex of a given game, and tell you about it\'s evolution trigger and conditions. I can also tell you what type is good against another.');
-      convo.say('All my functions are available through my main menu. Though you can also trigger them by saying things like "pokemon", "pokedex", "type". \n\nYou can also always bring up the main menu by greeting me. If you need a reminder, don\'t hesitate to say "help"!');
+      convo.say('I heard that you want to know more about me? :) \nI am a bot made to assist Pokémon trainers like you, on a quest to catch \'em all! \n\nI can find any Pokémon through any Pokédex of a given game, and tell you about its evolution trigger and conditions. I can also tell you what type is good against another.');
+      convo.say('All my functions are available through my main menu. Though you can also call them by saying things like "pokemon", "pokedex", "type". \n\nYou can also always bring up the main menu by greeting me. If you need a reminder, don\'t hesitate to say "help"!');
       convo.say({attachment: mainMenu});
     } else {
       bot.reply(message, 'error'); // verify
@@ -781,7 +781,7 @@ function sayEvolutionInfos(convo, details, current, evolved, evolutionInfos, dis
       } else if (detail.gender === 2) {
         gender = 'male';
       }
-      conditions += '\n• it\'s gender must be: ' + gender;
+      conditions += '\n• its gender must be: ' + gender;
     }
     if (detail.relative_physical_stats) {
       conditions += '\n• phys. stats: ' + detail.relative_physical_stats; // verify
@@ -993,8 +993,8 @@ function displayTypeInfos(message, bot, chosenType, halfDamageFrom, noDamageFrom
   
   bot.startConversation(message, function(err, convo) {
     if (!err) {
-      convo.say('(y) ' + capitalizeFirst(chosenType) + '-type (y)\n' + typeInfosGood);
-      convo.say(':poop: ' + capitalizeFirst(chosenType) + '-type :poop:\n' + typeInfosBad);
+      convo.say(':) ' + capitalizeFirst(chosenType) + '-type :)\n' + typeInfosGood);
+      convo.say(':( ' + capitalizeFirst(chosenType) + '-type :(\n' + typeInfosBad);
       convo.say({attachment: mainMenu});
     } else {
       bot.reply(message, 'error');  // verify
@@ -1052,10 +1052,12 @@ function reverseSplitJoin(sentence) {
 // TO DO LIST:
 /* 
   - controller.hears for everything else that is not a command and bring up the main menu?
-  - display location (evolution trigger) only for current game ?
-  - test with multiple users
-  - read me
+  - postback problems on mobile ? 
+  - cancel middleware function?
+  - test with multiple user
   - test more pokemon evolutions (triggers / conditions) 
+  - display location (evolution trigger) only for current game ?
   - encounter locations ? - not sure if possible
   - evolution items location ? - not sure if possible
+  - special and mega pokemon ?
 */
