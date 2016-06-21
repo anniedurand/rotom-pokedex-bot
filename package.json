@@ -18,7 +18,7 @@
   "homepage": "https://github.com/poe21/pokevolution-bot#readme",
   "dependencies": {
     "botkit": "^0.2.0",
-    "express": "^4.14.0",
+    "request": "^2.72.0",
     "pokedex-promise-v2": "^2.0.1"
   },
   "engines": {
