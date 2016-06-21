@@ -14,7 +14,7 @@
 
 The purpose of this bot is to assist me - and potentially other players - while playing handheld Pokémon games. Specifically, the ones who want to fill their Pokédex. 
 
-It lives in Facebook Messenger and replies to various user requests. It currently hasn't been submitted to Facebook for review, and therefore **currently cannot be used by anyone other than the admin or approved beta testers**.
+It lives in Facebook Messenger and replies to various user requests. **It has now been reviewed and approved by Facebook and anyone can send messages to it!** *However it is still in beta testing and I keep on improving features, therefore bugs might happen.*
 
 * [Rotom Pokédex Bot on Facebook](https://www.facebook.com/Rotom-Pok%C3%A9dex-Bot-541426089377828/)
 * [Rotom Pokédex Bot on Messenger](https://www.messenger.com/t/541426089377828)

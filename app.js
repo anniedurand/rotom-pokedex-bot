@@ -1214,8 +1214,7 @@ function reverseSplitJoin(sentence) {
   - postback problems on mobile ? 
   - cancel middleware function?
   - test with multiple user
-  - test more pokemon evolutions (triggers / conditions) 
-  - display location (evolution trigger) only for current game ?
+  - test more pokemon evolutions (triggers / conditions)
   - encounter locations ? - not sure if possible
   - evolution items location ? - not sure if possible
   - special and mega pokemon ?
