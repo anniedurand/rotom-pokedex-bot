@@ -680,6 +680,7 @@ function evolutionChain(bot, message, pokemonName, pokemonChainUrl, displayName)
             
             array2.forEach(function(evolution) {  // loop over 3rd stage pokemon
               var evolutionDetails2 = evolution.evolution_details;
+              count2--;
               
               evolutionDetails2.forEach(function(detail) {  // for each evolution trigger details per pokemon
                 var locationInfos2 = detail.location;
@@ -708,12 +709,11 @@ function evolutionChain(bot, message, pokemonName, pokemonChainUrl, displayName)
                     .catch(function(error) {
                       console.log('There was an ERROR: ', error);
                     });
-                } else {  // 3 evolution levels, without locations
+                } else if (count2 === 0 && location2Found === null) {  // 3 evolution levels, without locations
                   console.log('possibility 2')
                   botSayEvolution(bot, message, displayName, evolutionInfos, pokemonName, locationsArray);
                 }
               });
-              count2--;
             });
             
           } else {  // two-stage evolution pokemon 
@@ -858,7 +858,7 @@ function trigger(triggerType, detail) {
   } else if (triggerType === 'trade') {
     return ' after being traded with another player';
   } else if (triggerType === 'use-item') {
-    return ' by being exposed to: ' + splitJoin(detail.item.name);
+    return ' by being exposed to: ' + capitalizeFirst(splitJoin(detail.item.name));
   } else if (triggerType === 'shed') {
     return ' by shedding (?)'; // ? change this  
   }
@@ -877,7 +877,7 @@ function sayEvolutionInfos(bot, message, convo, details, current, evolved, evolu
     var conditions = ':';
     
     if (detail.min_level) {
-      conditions += '\n• at level ' + detail.min_level;
+      conditions += '\n• starting at level ' + detail.min_level;
     }
     if (detail.min_beauty) {
       conditions += '\n• with a beauty level of at least ' + detail.min_beauty + ' points';
@@ -894,18 +894,18 @@ function sayEvolutionInfos(bot, message, convo, details, current, evolved, evolu
       } else if (detail.gender === 3) {
         gender = 'genderless';
       }
-      conditions += '\n• your pokemon must be: ' + gender;
+      conditions += '\n• your ' + displayName + ' must be: ' + gender;
     }
-    if (detail.relative_physical_stats) {
+    if (detail.relative_physical_stats || detail.relative_physical_stats === 0) {
       var relativeStats;
       if (detail.relative_physical_stats === 1) {
-        relativeStats = 'Attack > Defense';
+        relativeStats = 'its Attack is higher than its Defense';
       } else if (detail.relative_physical_stats === 0) {
-        relativeStats = 'Attack = Defense';
+        relativeStats = 'its Attack and Defense are the same';
       } else if (detail.relative_physical_stats === -1) {
-        relativeStats = 'Attack < Defense';
+        relativeStats = 'its Defense is higher than its Attack';
       }
-      conditions += '\n• with the following stats: ' + relativeStats;
+      conditions += '\n• if ' + relativeStats;
     }
     if (detail.needs_overworld_rain) {
       conditions += '\n• while it\'s raining in the overworld';
@@ -1221,6 +1221,7 @@ function reverseSplitJoin(sentence) {
 
 // TO DO LIST:
 /* 
+  - if pokemon exists but not in current game, throw different messages (sorry pokemon not available in current game ver) / remove pokemon from evolution chain? 
   - controller.hears for everything else that is not a command and bring up the main menu?
   - postback problems on mobile ? 
   - cancel middleware function?
