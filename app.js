@@ -717,6 +717,9 @@ function evolutionChain(bot, message, pokemonName, pokemonChainUrl, displayName)
             });
             
           } else {  // two-stage evolution pokemon 
+            count--;
+            console.log(count, 'count')
+            
             evolutionDetails.forEach(function(detail) {
               var locationInfos = detail.location;
               console.log(locationInfos, ', locationInfos')
@@ -747,14 +750,12 @@ function evolutionChain(bot, message, pokemonName, pokemonChainUrl, displayName)
                   .catch(function(error) {
                     console.log('There was an ERROR: ', error);
                   });
-              } else if (count === 0 && locationInfos === null && evolution.evolves_to.length === 0) {  // 2 evolution levels, without locations
+              } else if (count === 0 && locationFound === null && evolution.evolves_to.length === 0) {  // 2 evolution levels, without locations
                 console.log('possibility 4')
                 botSayEvolution(bot, message, displayName, evolutionInfos, pokemonName, locationsArray);
               }
             });
           }
-          count--;
-          console.log(count, 'count')
         });
         console.log(locationCounter, 'locationCounter')
         
@@ -879,7 +880,7 @@ function sayEvolutionInfos(bot, message, convo, details, current, evolved, evolu
       conditions += '\n• at level ' + detail.min_level;
     }
     if (detail.min_beauty) {
-      conditions += '\n• while having a beauty level of at least: ' + detail.min_beauty;
+      conditions += '\n• with a beauty level of at least ' + detail.min_beauty + ' points';
     }
     if (detail.time_of_day.length > 1) {
       conditions += '\n• during the ' + detail.time_of_day;
@@ -890,21 +891,31 @@ function sayEvolutionInfos(bot, message, convo, details, current, evolved, evolu
         gender = 'female';
       } else if (detail.gender === 2) {
         gender = 'male';
+      } else if (detail.gender === 3) {
+        gender = 'genderless';
       }
-      conditions += '\n• its gender must be: ' + gender;
+      conditions += '\n• your pokemon must be: ' + gender;
     }
     if (detail.relative_physical_stats) {
-      conditions += '\n• phys. stats: ' + detail.relative_physical_stats; // verify
+      var relativeStats;
+      if (detail.relative_physical_stats === 1) {
+        relativeStats = 'Attack > Defense';
+      } else if (detail.relative_physical_stats === 0) {
+        relativeStats = 'Attack = Defense';
+      } else if (detail.relative_physical_stats === -1) {
+        relativeStats = 'Attack < Defense';
+      }
+      conditions += '\n• with the following stats: ' + relativeStats;
     }
     if (detail.needs_overworld_rain) {
       conditions += '\n• while it\'s raining in the overworld';
     }
     if (detail.turn_upside_down) {
-      conditions += '\n• you have to turn your 3DS upside down';  // verify
+      conditions += '\n• you must hold your 3DS upside-down when leveling up';  // Inkay
     }
-    if (detail.item) {
-      conditions += '\n• using this item: ' + splitJoin(detail.item.name);  // might not be needed if only comes up with item evolution trigger
-    }
+    // if (detail.item) {
+    //   conditions += '\n• using this item: ' + splitJoin(detail.item.name);  // might not be needed if only comes up with item evolution trigger
+    // }
     if (detail.known_move_type) {
       conditions += '\n• while knowing a ' + splitJoin(detail.known_move_type.name) + '-type move';
     }
@@ -912,19 +923,19 @@ function sayEvolutionInfos(bot, message, convo, details, current, evolved, evolu
       conditions += '\n• while having at least ' + detail.min_affection + ' affection hearts in Pokémon-Amie';
     }
     if (detail.party_type) {
-      conditions += '\n• party type: ' + detail.party_type;  // verify
+      conditions += '\n• while having a ' + detail.party_type + '-type Pokémon in your party';
     }
     if (detail.trade_species) {
-      conditions += '\n• trade_species: ' + detail.trade_species; // verify
+      conditions += '\n• you must trade it for a ' + detail.trade_species;
     }
     if (detail.party_species) {
       conditions += '\n• while having a ' + capitalizeFirst(detail.party_species.name) + ' in your party';
     }
     if (detail.min_happiness) {
-      conditions += '\n• with a minimum happiness level of ' + detail.min_happiness;  // verify
+      conditions += '\n• with a happiness level of at least ' + detail.min_happiness + ' points';
     }
     if (detail.held_item) {
-      conditions += '\n• while holding: ' + capitalizeFirst(splitJoin(detail.held_item.name)); // verify
+      conditions += '\n• while holding: ' + capitalizeFirst(splitJoin(detail.held_item.name));
     }
     if (detail.known_move) {
       conditions += '\n• while knowing the move: ' + capitalizeFirst(splitJoin(detail.known_move.name)); 
