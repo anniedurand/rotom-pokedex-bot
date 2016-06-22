@@ -917,16 +917,16 @@ function sayEvolutionInfos(bot, message, convo, details, current, evolved, evolu
     //   conditions += '\n• using this item: ' + splitJoin(detail.item.name);  // might not be needed if only comes up with item evolution trigger
     // }
     if (detail.known_move_type) {
-      conditions += '\n• while knowing a ' + splitJoin(detail.known_move_type.name) + '-type move';
+      conditions += '\n• while knowing a ' + capitalizeFirst(detail.known_move_type.name) + '-type move';
     }
     if (detail.min_affection) {
       conditions += '\n• while having at least ' + detail.min_affection + ' affection hearts in Pokémon-Amie';
     }
     if (detail.party_type) {
-      conditions += '\n• while having a ' + detail.party_type + '-type Pokémon in your party';
+      conditions += '\n• while having a ' + capitalizeFirst(detail.party_type) + '-type Pokémon in your party';
     }
     if (detail.trade_species) {
-      conditions += '\n• you must trade it for a ' + detail.trade_species;
+      conditions += '\n• you must trade it for a ' + capitalizeFirst(detail.trade_species);
     }
     if (detail.party_species) {
       conditions += '\n• while having a ' + capitalizeFirst(detail.party_species.name) + ' in your party';
