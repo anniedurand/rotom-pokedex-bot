@@ -31,6 +31,27 @@ controller.middleware.receive.use(function(bot, message, next) {
 })
 
 
+var pokemonList = null;
+
+// POKEMON LIST
+request('https://pokeapi.co/api/v2/pokemon', function (err, result) {
+  if (!err) {
+    var data = JSON.parse(result.body);
+    var url = 'https://pokeapi.co/api/v2/pokemon/?limit=' + data.count;
+    
+    request(url, function (err, result) {
+      if (!err) {
+        data = JSON.parse(result.body); 
+        pokemonList = data.results;
+      } else {
+        console.log('there was an error: ' + err); // verify
+      }
+    });
+  } else {
+    console.log('there was an error: ' + err); // verify
+  }
+});
+
 // MENUS
 
 var mainMenu = {
@@ -563,9 +584,11 @@ function searchPokemon(bot, message) {
 // DISPLAY POKEMON WITH MENU
 
 function displayFoundPokemon(bot, message, foundPokemon, pokemonName, entry_number) {
+  // search requested pokemon using the URL that was passed
   request(foundPokemon, function (err, result) {
     if (!err) {
       var resultObject = JSON.parse(result.body);
+      
       var nationalDexNo = resultObject.pokedex_numbers[(resultObject.pokedex_numbers.length -1)].entry_number;
       var currentPokedexEntryNo = entry_number;
       var pokemonChainUrl = resultObject.evolution_chain.url;
@@ -649,134 +672,243 @@ function displayFoundPokemon(bot, message, foundPokemon, pokemonName, entry_numb
   });
 }
 
+// GET EVOLUTION CHAIN
 
-// DISPLAY EVOLUTION CHAIN
-
-function evolutionChain(bot, message, pokemonName, pokemonChainUrl, displayName) {
+function getEvolutionChain(bot, message, pokemonName, pokemonChainUrl, displayName) {
   request(pokemonChainUrl, function (err, result) {
     if (!err) {
       var evolutionInfos = JSON.parse(result.body);
-      var locationsArray = [];
-      
-      // pre-sorting pokemon levels and checking if they have a specified location for evolution trigger. 
-      // if yes, save the region and displayName in the same location object and push that object into an array that will be passed to further functions
-      
-      if (evolutionInfos.chain.evolves_to.length > 0) {   // if at least 2 stages evolution
-        var array = evolutionInfos.chain.evolves_to;
-        var count = array.length;
-        console.log(count, 'count beginning')
-        
-        var count2 = null;
-        var locationFound = null;
-        var locationCounter = 0;
-        
-        array.forEach(function(evolution) {  // loop over second-stage pokemon
-          var evolutionDetails = evolution.evolution_details;
-          
-          if (evolution.evolves_to.length > 0) {  // if 3rd-stage evolution level exists
-            var location2Found = null;
-            var array2 = evolution.evolves_to;
-            count2 = array2.length;
-            
-            array2.forEach(function(evolution) {  // loop over 3rd stage pokemon
-              var evolutionDetails2 = evolution.evolution_details;
-              count2--;
-              
-              evolutionDetails2.forEach(function(detail) {  // for each evolution trigger details per pokemon
-                var locationInfos2 = detail.location;
-                
-                if (locationInfos2 !== null) {   // if there is a location
-                  location2Found = true;
-                  locationCounter++;
-                  
-                  P.getLocationByName(locationInfos2.name)      // get infos about that location with found name
-                    .then(function(response) {
-                      locationInfos2.region = response.region.name;    // save corresponding region in found location object
-                      
-                      response.names.forEach(function(name) {       // loop over display names available
-                        if (name.language.name === 'en') {          // if name is in English
-                          locationInfos2.displayName = name.name;   // save corresponding name in found location object
-                        }
-                      });
-                      locationsArray.push(locationInfos2);          // push location object with added region and displayName in an array
-                      
-                      if (count2 === 0 && location2Found === true && locationCounter === locationsArray.length) {  // if 
-                        console.log(locationsArray, 'locationsArray');
-                        console.log('possibility 1')
-                        botSayEvolution(bot, message, displayName, evolutionInfos, pokemonName, locationsArray);
-                      }
-                    })
-                    .catch(function(error) {
-                      console.log('There was an ERROR: ', error);
-                    });
-                } else if (count2 === 0 && location2Found === null) {  // 3 evolution levels, without locations
-                  console.log('possibility 2')
-                  botSayEvolution(bot, message, displayName, evolutionInfos, pokemonName, locationsArray);
-                }
-              });
-            });
-            
-          } else {  // two-stage evolution pokemon 
-            count--;
-            console.log(count, 'count')
-            
-            evolutionDetails.forEach(function(detail) {
-              var locationInfos = detail.location;
-              console.log(locationInfos, ', locationInfos')
-              
-              if (locationInfos !== null) {
-                locationFound = true;
-                locationCounter++;
-                
-                P.getLocationByName(locationInfos.name)
-                  .then(function(response) {
-                    console.log(response.region.name, 'response.region.name')
-                    locationInfos.region = response.region.name;
-                    
-                    response.names.forEach(function(name) {
-                      if (name.language.name === 'en') {
-                        locationInfos.displayName = name.name;
-                      }
-                    });
-                    console.log(locationInfos, 'locationInfos')
-                    locationsArray.push(locationInfos);
-                    
-                    if (count2 === null && count === 0 && locationFound === true && locationCounter === locationsArray.length) {
-                      console.log(locationsArray, 'locationsArray');
-                      console.log('possibility 3')
-                      botSayEvolution(bot, message, displayName, evolutionInfos, pokemonName, locationsArray);
-                    }
-                  })
-                  .catch(function(error) {
-                    console.log('There was an ERROR: ', error);
-                  });
-              } else if (count === 0 && locationFound === null && evolution.evolves_to.length === 0) {  // 2 evolution levels, without locations
-                console.log('possibility 4')
-                botSayEvolution(bot, message, displayName, evolutionInfos, pokemonName, locationsArray);
-              }
-            });
-          }
-        });
-        console.log(locationCounter, 'locationCounter')
-        
-      } else {  // one level only pokemon
-        console.log('possibility 5')
-        botSayEvolution(bot, message, displayName, evolutionInfos, pokemonName, locationsArray);
-      }
+      sortEvolutionLevels(bot, message, pokemonName, pokemonChainUrl, displayName, evolutionInfos);
     } else {
-      bot.reply(message, 'error');
+      console.log('The was an error: ' + err) // verify
       return;
     }
   });
 }
 
-function botSayEvolution(bot, message, displayName, evolutionInfos, pokemonName, locationsArray) {  
+
+// SORT EVOLUTION LEVELS
+
+function sortEvolutionLevels(bot, message, pokemonName, pokemonChainUrl, displayName, evolutionInfos) {
+  var first = evolutionInfos.chain.species.name;
+  var evoLevelTwoArray = [];
+  var evoLevelThreeArray = [];
+  var totalPokemonsInChain = [];
+  var counter = 1;
+  
+  var secondLevel = [];
+  var thirdLevel = [];
+  
+  if (evolutionInfos.chain.evolves_to.length > 0) {           // if at least 2 stages evolution
+    evoLevelTwoArray = evolutionInfos.chain.evolves_to;
+    
+    evoLevelTwoArray.forEach(function(evolution) {            // loop over second-stage pokemon
+      console.log(evolution, 'evolution')
+      secondLevel.push(evolution.species.name);
+      totalPokemonsInChain.push(evolution.species.name);
+      counter++;
+      
+      if (evolution.evolves_to.length > 0) {                  // if there is at least 1 level three stage for this level 2 pokemon
+        evolution.evolves_to.forEach(function(evolution2) {   // loop over
+          evoLevelThreeArray.push(evolution2);                // push level 3 pokemons
+          thirdLevel.push(evolution2.species.name);
+          totalPokemonsInChain.push(evolution2.species.name);
+          counter++;
+        });
+      }
+    });
+    totalPokemonsInChain.push(first);
+  } else {
+    totalPokemonsInChain.push(first);
+  }
+  
+  console.log(totalPokemonsInChain, 'totalPokemonsInChain')
+  console.log(counter, 'counter')
+  
+  if (totalPokemonsInChain.length === counter) {
+    sortMegaPrimal(bot, message, pokemonName, pokemonChainUrl, displayName, evolutionInfos, totalPokemonsInChain, first, secondLevel, thirdLevel, evoLevelTwoArray, evoLevelThreeArray);
+  }
+}
+
+
+// SORT MEGA / PRIMAL
+  
+function sortMegaPrimal(bot, message, pokemonName, pokemonChainUrl, displayName, evolutionInfos, totalPokemonsInChain, first, secondLevel, thirdLevel, evoLevelTwoArray, evoLevelThreeArray) {
+  var relatedSpecialPokemons = {};
+  var mega = [];
+  var primal = [];
+  
+  totalPokemonsInChain.forEach(function(pokemonInChain) {
+    if (pokemonList) {
+      pokemonList.forEach(function(pokemonInList) {
+        if (pokemonInList.name.indexOf(pokemonInChain) !== -1 && pokemonInList.name !== pokemonInChain) {   // if there are many pokemon with the same name in the full list (Charizard, Mega Charizard X, etc.)
+          if (!relatedSpecialPokemons[pokemonInChain]) {
+            relatedSpecialPokemons[pokemonInChain] = [];
+          }
+          relatedSpecialPokemons[pokemonInChain].push(pokemonInList.name);
+        }
+      });
+    } else {
+      return;
+    }
+  });
+  console.log(relatedSpecialPokemons, 'relatedSpecialPokemons')
+  
+  for (var key in relatedSpecialPokemons) {
+    var list = relatedSpecialPokemons[key];
+    
+    list.forEach(function(listedPokemon){
+      if (listedPokemon.indexOf('-mega') !== -1) {              // if a mega pokemon is found in the special pokemon versions
+        var megaPokemonSplit = listedPokemon.split('-');        // split because 'mega' is displayed after the pokemon name in the API
+        
+        if (megaPokemonSplit.length > 2) {                      // if the name is more than 3 words (ex: charizard-mega-x)
+          var last = '-' + megaPokemonSplit.pop();                    // pop the 3rd word
+        } else {
+          last = '';
+        }
+        var pokemon = megaPokemonSplit.shift();                 // shift the pokemon name
+        var megaPokemon = megaPokemonSplit + '-' + pokemon + last;    // reassemble
+        
+        mega.push(megaPokemon);
+      } 
+      else if (listedPokemon.indexOf('-primal') !== -1) {
+        var primalPokemonSplit = listedPokemon.split('-');
+        
+        pokemon = primalPokemonSplit.shift();
+        var primalPokemon = primalPokemonSplit + '-' + pokemon;
+        
+        primal.push(primalPokemon);  
+      }
+    });
+  }
+  
+  console.log(mega, 'mega')
+  console.log(primal, 'primal')
+  
+  locationFinder(bot, message, pokemonName, pokemonChainUrl, displayName, evolutionInfos, first, secondLevel, thirdLevel, evoLevelTwoArray, evoLevelThreeArray, mega, primal);
+}  
+  
+
+function locationFinder(bot, message, pokemonName, pokemonChainUrl, displayName, evolutionInfos, first, secondLevel, thirdLevel, evoLevelTwoArray, evoLevelThreeArray, mega, primal) {
+  var availableLocationsArray = [];
+  
+  // pre-sorting pokemon levels and checking if they have a specified location for evolution trigger. 
+  // if yes, save the region and displayName in the same location object and push that object into an array that will be passed to further functions
+  
+  if (evoLevelTwoArray.length > 0) {   // if at least 2 stages evolution
+    var count = evoLevelTwoArray.length;
+    var count2 = null;
+    var locationFound = null;
+    var locationCounter = 0;
+    console.log(count, 'count beginning')
+    
+    evoLevelTwoArray.forEach(function(evolution) {  // loop over second-stage pokemon
+      var evolutionDetails = evolution.evolution_details;
+      
+      if (evoLevelThreeArray.length > 0) {  // if 3rd-stage evolution level exists
+        var location2Found = null;
+        count2 = evoLevelThreeArray.length;
+        
+        evoLevelThreeArray.forEach(function(evolution) {  // loop over 3rd stage pokemon
+          var evolutionDetails2 = evolution.evolution_details;
+          count2--;
+          
+          evolutionDetails2.forEach(function(detail) {  // for each evolution trigger details per pokemon
+            var locationInfos2 = detail.location;
+            
+            if (locationInfos2 !== null) {   // if there is a location
+              location2Found = true;
+              locationCounter++;
+              
+              P.getLocationByName(locationInfos2.name)      // get infos about that location with found name
+                .then(function(response) {
+                  locationInfos2.region = response.region.name;    // save corresponding region in found location object
+                  
+                  response.names.forEach(function(name) {       // loop over display names available
+                    if (name.language.name === 'en') {          // if name is in English
+                      locationInfos2.displayName = name.name;   // save corresponding name in found location object
+                    }
+                  });
+                  availableLocationsArray.push(locationInfos2);          // push location object with added region and displayName in an array
+                  
+                  if (count2 === 0 && location2Found === true && locationCounter === availableLocationsArray.length) {  // if 
+                    console.log(availableLocationsArray, 'availableLocationsArray');
+                    console.log('possibility 1')
+                    botSayEvolution(bot, message, displayName, evolutionInfos, evoLevelTwoArray, evoLevelThreeArray, pokemonName, availableLocationsArray, mega, primal);
+                  }
+                })
+                .catch(function(error) {
+                  console.log('There was an ERROR: ', error);
+                });
+            } else if (count2 === 0 && location2Found === null) {  // 3 evolution levels, without locations
+              console.log('possibility 2')
+              botSayEvolution(bot, message, displayName, evolutionInfos, evoLevelTwoArray, evoLevelThreeArray, pokemonName, availableLocationsArray, mega, primal);
+            }
+          });
+        });
+        
+      } else {  // two-stage evolution pokemon 
+        count--;
+        console.log(count, 'count')
+        
+        evolutionDetails.forEach(function(detail) {
+          var locationInfos = detail.location;
+          console.log(locationInfos, ', locationInfos')
+          
+          if (locationInfos !== null) {
+            locationFound = true;
+            locationCounter++;
+            
+            P.getLocationByName(locationInfos.name)
+              .then(function(response) {
+                console.log(response.region.name, 'response.region.name')
+                locationInfos.region = response.region.name;
+                
+                response.names.forEach(function(name) {
+                  if (name.language.name === 'en') {
+                    locationInfos.displayName = name.name;
+                  }
+                });
+                console.log(locationInfos, 'locationInfos')
+                availableLocationsArray.push(locationInfos);
+                
+                if (count2 === null && count === 0 && locationFound === true && locationCounter === availableLocationsArray.length) {
+                  console.log(availableLocationsArray, 'availableLocationsArray');
+                  console.log('possibility 3')
+                  botSayEvolution(bot, message, displayName, evolutionInfos, evoLevelTwoArray, evoLevelThreeArray, pokemonName, availableLocationsArray, mega, primal);
+                }
+              })
+              .catch(function(error) {
+                console.log('There was an ERROR: ', error);
+              });
+          } else if (count === 0 && locationFound === null && evolution.evolves_to.length === 0) {  // 2 evolution levels, without locations
+            console.log('possibility 4')
+            botSayEvolution(bot, message, displayName, evolutionInfos, evoLevelTwoArray, evoLevelThreeArray, pokemonName, availableLocationsArray, mega, primal);
+          }
+        });
+      }
+    });
+    console.log(locationCounter, 'locationCounter')
+    
+  } else {  // one level only pokemon
+    console.log('possibility 5')
+    botSayEvolution(bot, message, displayName, evolutionInfos, evoLevelTwoArray, evoLevelThreeArray, pokemonName, availableLocationsArray, mega, primal);
+  }
+}
+
+
+function botSayEvolution(bot, message, displayName, evolutionInfos, evoLevelTwoArray, evoLevelThreeArray, pokemonName, availableLocationsArray, mega, primal) {  
   bot.startConversation(message, function(err, convo) {
     if (!err) {
-      var evoLevelTwoArray = evolutionInfos.chain.evolves_to;
-      var evoLevelThreeArray = [];
-      if (evoLevelTwoArray.length > 0) {
-        evoLevelThreeArray = evolutionInfos.chain.evolves_to[0].evolves_to;
+      var megaDisplay = null;
+      var megaChain = '';
+      var primalChain = '';
+      
+      if (mega.length > 0) {
+        megaDisplay =  beautifyWordsArrays(mega);
+        megaChain = ' \u21e8 ' + beautifyWordsArrays(mega);
+      } else if (primal.length > 0) {
+        primalChain = ' \u21e8 ' + primal;
       }
       
       var current = pokemonName;
@@ -801,50 +933,50 @@ function botSayEvolution(bot, message, displayName, evolutionInfos, pokemonName,
       // sending the right information depending on the evolution chain
       if (first === current && secondLevel.length > 0) {    // if the current pokemon is the first in the chain and there is a second level
         if (thirdLevel.length === 0) {
-          convo.say(displayName + ' \u21e8 ' + beautifyWordsArrays(secondLevel));
+          convo.say(displayName + ' \u21e8 ' + beautifyWordsArrays(secondLevel) + megaChain);
         } else {
-          convo.say(displayName + ' \u21e8 ' + beautifyWordsArrays(secondLevel) + ' \u21e8 ' + beautifyWordsArrays(thirdLevel));
+          convo.say(displayName + ' \u21e8 ' + beautifyWordsArrays(secondLevel) + ' \u21e8 ' + beautifyWordsArrays(thirdLevel) + megaChain);
         }
         
         evoLevelTwoArray.forEach(function(pokemon) {
           var evolved = capitalizeFirst(splitJoin(pokemon.species.name));
           var details = pokemon.evolution_details;
           
-          sayEvolutionInfos(bot, message, convo, details, current, evolved, evolutionInfos, displayName, locationsArray);
+          sayEvolutionInfos(bot, message, convo, details, current, evolved, evolutionInfos, displayName, availableLocationsArray);
         });
         convo.say({attachment: newSearchMenu});
       } 
       
       else if (first === current && secondLevel.length === 0) {  // if the current pokemon is the first in the chain and there is no second level
-        convo.say(displayName + ' doesn\'t have any known evolution.');
+        mega.length === 0 ? convo.say(displayName + ' doesn\'t have any known evolution.') : convo.say(displayName + ' doesn\'t have any known evolution. However, in battle it can mega evolve to: ' + megaDisplay); 
         convo.say({attachment: newSearchMenu});
       } 
       
       else if (secondLevel.indexOf(current) !== -1 && thirdLevel.length > 0) {  // if the current pokemon is the second in the chain and there is a third level
-        convo.say(capitalizeFirst(splitJoin(first)) + ' \u21e8 ' + beautifyWordsArrays(secondLevel) + ' \u21e8 ' + beautifyWordsArrays(thirdLevel));
+        convo.say(capitalizeFirst(splitJoin(first)) + ' \u21e8 ' + beautifyWordsArrays(secondLevel) + ' \u21e8 ' + beautifyWordsArrays(thirdLevel) + megaChain);
         
         evoLevelThreeArray.forEach(function(pokemon) {
           var evolved = capitalizeFirst(splitJoin(pokemon.species.name));
           var details = pokemon.evolution_details; 
           
-          sayEvolutionInfos(bot, message, convo, details, current, evolved, evolutionInfos, displayName, locationsArray);
+          sayEvolutionInfos(bot, message, convo, details, current, evolved, evolutionInfos, displayName, availableLocationsArray);
         });
         convo.say({attachment: newSearchMenu});
       } 
       
       else if (secondLevel.indexOf(current) !== -1 && thirdLevel.length === 0) {  // if the current pokemon is the second in the chain and there is no third level
-        convo.say(capitalizeFirst(splitJoin(first)) + ' \u21e8 ' + beautifyWordsArrays(secondLevel));
-        convo.say(displayName + ' is at its final evolution stage.');
+        convo.say(capitalizeFirst(splitJoin(first)) + ' \u21e8 ' + beautifyWordsArrays(secondLevel) + megaChain);
+        mega.length === 0 ? convo.say(displayName + ' is at its final evolution stage.') : convo.say(displayName + ' is at its final evolution stage. In battle it can also mega evolve to: ' + megaDisplay);
         convo.say({attachment: newSearchMenu});
       } 
       
       else if (thirdLevel.indexOf(current) !== -1) {
-        convo.say(capitalizeFirst(splitJoin(first)) + ' \u21e8 ' + beautifyWordsArrays(secondLevel) + ' \u21e8 ' + beautifyWordsArrays(thirdLevel));
-        convo.say(displayName + ' is at its final evolution stage.');
+        convo.say(capitalizeFirst(splitJoin(first)) + ' \u21e8 ' + beautifyWordsArrays(secondLevel) + ' \u21e8 ' + beautifyWordsArrays(thirdLevel) + megaChain);
+        mega.length === 0 ? convo.say(displayName + ' is at its final evolution stage.') : convo.say(displayName + ' is at its final evolution stage. In battle it can also mega evolve to: ' + megaDisplay);
         convo.say({attachment: newSearchMenu});
       }
     } else {
-      bot.reply(message, 'error');
+      bot.reply(message, 'there was an error: ' + err);
       return;
     }
   });
@@ -989,7 +1121,7 @@ function sayEvolutionInfos(bot, message, convo, details, current, evolved, evolu
           } else {
             availableLocationsArray.forEach(function(location) {
               if (location.name === detail2.location.name) {
-                locationsArray.push(' ' + location.displayName + ' (' + capitalizeFirst(location.region) + ' region)');
+                locationsArray.push(' ' + location.displayName + ' (' + capitalizeFirst(location.region) + ')');
               }
             });
           }
@@ -1005,7 +1137,7 @@ function sayEvolutionInfos(bot, message, convo, details, current, evolved, evolu
       } else {
         availableLocationsArray.forEach(function(location) {
           if (location.name === detail.location.name) {
-            locationsArray.push(' ' + location.displayName + ' (' + capitalizeFirst(location.region) + ' region)');
+            locationsArray.push(' ' + location.displayName + ' (' + capitalizeFirst(location.region) + ')');
           }
         });
       }
