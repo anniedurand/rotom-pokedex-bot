@@ -789,6 +789,8 @@ function sortMegaPrimal(bot, message, pokemonName, pokemonChainUrl, displayName,
 }  
   
 
+// FIND AVAILABLE EVOLUTION TRIGGER LOCATIONS 
+
 function locationFinder(bot, message, pokemonName, pokemonChainUrl, displayName, evolutionInfos, first, secondLevel, thirdLevel, evoLevelTwoArray, evoLevelThreeArray, mega, primal) {
   var availableLocationsArray = [];
   
@@ -897,6 +899,8 @@ function locationFinder(bot, message, pokemonName, pokemonChainUrl, displayName,
 }
 
 
+// BOT SAY EVOLUTION
+
 function botSayEvolution(bot, message, displayName, evolutionInfos, evoLevelTwoArray, evoLevelThreeArray, first, secondLevel, thirdLevel, pokemonName, availableLocationsArray, mega, primal) {  
   bot.startConversation(message, function(err, convo) {
     if (!err) {
@@ -907,23 +911,23 @@ function botSayEvolution(bot, message, displayName, evolutionInfos, evoLevelTwoA
       
       if (mega.length > 0) {
         megaDisplay =  ' However, it can mega evolve to' + displayMegaEvol(beautifyWordsArrays(mega)) + ' in battle.';
-        megaChain = ' \u21e8 ' + displayMegaEvol(beautifyWordsArrays(mega));
+        megaChain = '\n\u2771\u2771 ' + displayMegaEvol(beautifyWordsArrays(mega));
       } else if (primal.length > 0) {
-        primalDisplay =  ' However, it can primal reverse to' + displayMegaEvol(beautifyWordsArrays(primal)) + ' in battle.';
-        primalChain = ' \u21e8 ' + beautifyWordsArrays(primal);
+        primalDisplay =  ' However, it can revert to' + displayMegaEvol(beautifyWordsArrays(primal)) + ' in battle.';
+        primalChain = '\n\u2771\u2771 ' + beautifyWordsArrays(primal);
       }
       
       var current = pokemonName;
       
       // sending the right information depending on the evolution chain
       if (first === current && secondLevel.length > 0) {    // if the current pokemon is the first in the chain and there is a second level
-        thirdLevel.length === 0 ? convo.say(displayName + ' \u21e8 ' + beautifyWordsArrays(secondLevel) + megaChain + primalChain) : convo.say(displayName + ' \u21e8 ' + beautifyWordsArrays(secondLevel) + ' \u21e8 ' + beautifyWordsArrays(thirdLevel) + megaChain + primalChain);
+        thirdLevel.length === 0 ? convo.say(displayName + ' \u21e8' + beautifyWordsArrays(secondLevel) + megaChain + primalChain) : convo.say(displayName + ' \u21e8' + beautifyWordsArrays(secondLevel) + ' \u21e8' + beautifyWordsArrays(thirdLevel) + megaChain + primalChain);
         
         evoLevelTwoArray.forEach(function(pokemon) {
           var evolved = capitalizeFirst(splitJoin(pokemon.species.name));
           var details = pokemon.evolution_details;
           
-          sayEvolutionInfos(bot, message, convo, details, current, evolved, evolutionInfos, displayName, availableLocationsArray);
+          sayEvolutionTriggers(bot, message, convo, details, current, evolved, evolutionInfos, displayName, availableLocationsArray);
         });
         convo.say({attachment: newSearchMenu});
       } 
@@ -937,25 +941,25 @@ function botSayEvolution(bot, message, displayName, evolutionInfos, evoLevelTwoA
       } 
       
       else if (secondLevel.indexOf(current) !== -1 && thirdLevel.length > 0) {  // if the current pokemon is the second in the chain and there is a third level
-        convo.say(capitalizeFirst(splitJoin(first)) + ' \u21e8 ' + beautifyWordsArrays(secondLevel) + ' \u21e8 ' + beautifyWordsArrays(thirdLevel) + megaChain + primalChain);
+        convo.say(capitalizeFirst(splitJoin(first)) + ' \u21e8' + beautifyWordsArrays(secondLevel) + ' \u21e8' + beautifyWordsArrays(thirdLevel) + megaChain + primalChain);
         
         evoLevelThreeArray.forEach(function(pokemon) {
           var evolved = capitalizeFirst(splitJoin(pokemon.species.name));
           var details = pokemon.evolution_details; 
           
-          sayEvolutionInfos(bot, message, convo, details, current, evolved, evolutionInfos, displayName, availableLocationsArray);
+          sayEvolutionTriggers(bot, message, convo, details, current, evolved, evolutionInfos, displayName, availableLocationsArray);
         });
         convo.say({attachment: newSearchMenu});
       } 
       
       else if (secondLevel.indexOf(current) !== -1 && thirdLevel.length === 0) {  // if the current pokemon is the second in the chain and there is no third level
-        convo.say(capitalizeFirst(splitJoin(first)) + ' \u21e8 ' + beautifyWordsArrays(secondLevel) + megaChain + primalChain);
+        convo.say(capitalizeFirst(splitJoin(first)) + ' \u21e8' + beautifyWordsArrays(secondLevel) + megaChain + primalChain);
         convo.say(displayName + ' is at its final evolution stage.' + megaDisplay + primalDisplay);
         convo.say({attachment: newSearchMenu});
       } 
       
       else if (thirdLevel.indexOf(current) !== -1) {
-        convo.say(capitalizeFirst(splitJoin(first)) + ' \u21e8 ' + beautifyWordsArrays(secondLevel) + ' \u21e8 ' + beautifyWordsArrays(thirdLevel) + megaChain + primalChain);
+        convo.say(capitalizeFirst(splitJoin(first)) + ' \u21e8' + beautifyWordsArrays(secondLevel) + ' \u21e8' + beautifyWordsArrays(thirdLevel) + megaChain + primalChain);
         convo.say(displayName + ' is at its final evolution stage.' + megaDisplay + primalDisplay);
         convo.say({attachment: newSearchMenu});
       }
@@ -982,9 +986,9 @@ function trigger(triggerType, detail) {
 }
 
 
-// EVOLUTION CONDITIONS DISPLAY
+// EVOLUTION CONDITIONS
 
-function sayEvolutionInfos(bot, message, convo, details, current, evolved, evolutionInfos, displayName, availableLocationsArray) {
+function sayEvolutionTriggers(bot, message, convo, details, current, evolved, evolutionInfos, displayName, availableLocationsArray) {
 
   details.forEach(function(detail) {
     if (detail.visited) {
@@ -1305,7 +1309,7 @@ function displayGameName(game) {
 }
 
 function displayMegaEvol(megaEvolution) {
-  return megaEvolution.join(' / ');
+  return megaEvolution.join(' /');
 }
 
 function beautifyWordsArrays(array) {
