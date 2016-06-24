@@ -507,7 +507,12 @@ function searchPokemon(bot, message) {
         
         // checking if a name or an ID number was entered
         if (chosenPokemon.match(/^[^0-9]+$/)) {
-          chosenPokemonName = reverseSplitJoin(chosenPokemon.toLowerCase());
+          if (chosenPokemon.toLowerCase().indexOf('mega') !== -1) {
+            var splitChosenPokemon = chosenPokemon.toLowerCase().split(' ');
+            chosenPokemonName = megaPokemonName(splitChosenPokemon);
+          } else {
+            chosenPokemonName = reverseSplitJoin(chosenPokemon.toLowerCase());
+          }
         } else if (chosenPokemon.match(/^[0-9]+$/)) {
           chosenPokemonId = Number(chosenPokemon);
         } else {
@@ -542,7 +547,8 @@ function searchPokemon(bot, message) {
                     displayFoundPokemon(bot, message, foundPokemon, pokemonName, entry_number);
                   }
                 });
-              } else if (chosenPokemonName) {   // if it's a name
+              } 
+              else if (chosenPokemonName) {   // if it's a name
                 pokemon_entries.forEach(function(index) {
                   var entry_number = index.entry_number;
                   var pokemonName = index.pokemon_species.name;
@@ -551,6 +557,16 @@ function searchPokemon(bot, message) {
                     displayFoundPokemon(bot, message, foundPokemon, pokemonName, entry_number);
                   }
                 });
+                
+                if (foundPokemon === null) {
+                  pokemonList.forEach(function(listedPokemon) {
+                    if (listedPokemon.name.indexOf(chosenPokemonName) !== -1) {
+                      foundPokemon = listedPokemon.url;
+                      var pokemonName = listedPokemon.name;
+                      displayFoundPokemon(bot, message, foundPokemon, pokemonName, null);
+                    }
+                  });
+                }
               }
               
               if (foundPokemon === null) {
@@ -588,19 +604,49 @@ function displayFoundPokemon(bot, message, foundPokemon, pokemonName, entry_numb
   request(foundPokemon, function (err, result) {
     if (!err) {
       var resultObject = JSON.parse(result.body);
+      var nationalDexNo = null;
+      var currentPokedexEntryNo = '';
+      var pokemonChainUrl = null;
+      var isSpecial = false;
+      var displayName = null;
       
-      var nationalDexNo = resultObject.pokedex_numbers[(resultObject.pokedex_numbers.length -1)].entry_number;
-      var currentPokedexEntryNo = entry_number;
-      var pokemonChainUrl = resultObject.evolution_chain.url;
+      if (foundPokemon.indexOf('/pokemon/') !== -1) {   // if the pokemon was found in the pokemon list (instead of pokemon species) and has a different url
+        nationalDexNo = resultObject.id;
+        isSpecial = true;
+        console.log(pokemonName, 'pokemonName')
+        displayName = capitalizeFirst(splitJoin(megaPokemonName(pokemonName.split('-'))));
+        
+        var pokemonNameSplit = pokemonName.split('-');
+        
+        P.getPokemonSpeciesByName(pokemonNameSplit[0])
+          .then(function(response) {
+            
+            pokemonChainUrl = response.evolution_chain.url;
+            console.log(pokemonChainUrl, 'pokemonChainUrl')
+          })
+          .catch(function(error) {
+            console.log('There was an ERROR: ', error);
+          });
+      } else {
+        nationalDexNo = resultObject.pokedex_numbers[(resultObject.pokedex_numbers.length -1)].entry_number;
+        currentPokedexEntryNo = 'No. ' + entry_number + ', ';
+        pokemonChainUrl = resultObject.evolution_chain.url;
+        displayName = resultObject.names[0].name;
+      }
       
       if (nationalDexNo) {
         request('https://pokeapi.co/api/v2/pokemon/' + nationalDexNo, function(err, result) {  // need to change the no. display according to chosen pokedex
           if (!err) {
-            var displayName = resultObject.names[0].name;
             var isBaby = '';
+            var displaySpecial = '';
+            
             if (resultObject.is_baby === true) {
               isBaby = ' [baby]';
+            } 
+            else if (isSpecial === true) {
+              displaySpecial = ' \u2606 special \u2606';
             }
+            
             var pokemonInfo = JSON.parse(result.body);
             var pokemonTypes = [];
             
@@ -614,7 +660,7 @@ function displayFoundPokemon(bot, message, foundPokemon, pokemonName, entry_numb
                 'template_type':'generic',
                 'elements':[
                   {
-                    'title': 'No. ' + currentPokedexEntryNo + ', ' + displayName + isBaby,
+                    'title': currentPokedexEntryNo + displayName + isBaby + displaySpecial,
                     'image_url': pokemonInfo.sprites.front_default,
                     'subtitle': 'Type(s) : ' + beautifyWordsArrays(pokemonTypes),
                     'buttons': [
@@ -671,6 +717,7 @@ function displayFoundPokemon(bot, message, foundPokemon, pokemonName, entry_numb
     }
   });
 }
+
 
 // GET EVOLUTION CHAIN
 
@@ -761,20 +808,14 @@ function sortMegaPrimal(bot, message, pokemonName, pokemonChainUrl, displayName,
       if (listedPokemon.indexOf('-mega') !== -1) {              // if a mega pokemon is found in the special pokemon versions
         var megaPokemonSplit = listedPokemon.split('-');        // split because 'mega' is displayed after the pokemon name in the API
         
-        if (megaPokemonSplit.length > 2) {                      // if the name is more than 3 words (ex: charizard-mega-x)
-          var last = '-' + megaPokemonSplit.pop();                    // pop the 3rd word
-        } else {
-          last = '';
-        }
-        var pokemon = megaPokemonSplit.shift();                 // shift the pokemon name
-        var megaPokemon = megaPokemonSplit + '-' + pokemon + last;    // reassemble
+        var megaPokemon = megaPokemonName(megaPokemonSplit);
         
         mega.push(megaPokemon);
       } 
       else if (listedPokemon.indexOf('-primal') !== -1) {
         var primalPokemonSplit = listedPokemon.split('-');
         
-        pokemon = primalPokemonSplit.shift();
+        var pokemon = primalPokemonSplit.shift();
         var primalPokemon = primalPokemonSplit + '-' + pokemon;
         
         primal.push(primalPokemon);  
@@ -786,8 +827,8 @@ function sortMegaPrimal(bot, message, pokemonName, pokemonChainUrl, displayName,
   console.log(primal, 'primal')
   
   locationFinder(bot, message, pokemonName, pokemonChainUrl, displayName, evolutionInfos, first, secondLevel, thirdLevel, evoLevelTwoArray, evoLevelThreeArray, mega, primal);
-}  
-  
+}
+
 
 // FIND AVAILABLE EVOLUTION TRIGGER LOCATIONS 
 
@@ -963,7 +1004,24 @@ function botSayEvolution(bot, message, displayName, evolutionInfos, evoLevelTwoA
         convo.say(displayName + ' is at its final evolution stage.' + megaDisplay + primalDisplay);
         convo.say({attachment: newSearchMenu});
       }
+      
+      else if (current.indexOf('mega') !== -1) {
+        var pokemon = current.split('-');
+        mega.forEach(function(megaPok) { 
+          if (megaPok.indexOf(pokemon) !== -1) {
+            convo.say(capitalizeFirst(splitJoin(first)) + ' \u21e8' + beautifyWordsArrays(secondLevel) + ' \u21e8' + beautifyWordsArrays(thirdLevel) + megaChain + primalChain);
+            convo.say(displayName + ' is a mega evolution.');
+          }
+        });
+      } 
+      else {
+        console.log('ass')
+        bot.reply(message, 'there was an error: ' + err);
+        return;
+      }
+      
     } else {
+      console.log('butts')
       bot.reply(message, 'there was an error: ' + err);
       return;
     }
@@ -1296,6 +1354,19 @@ function displayTypeInfos(message, bot, chosenType, halfDamageFrom, noDamageFrom
 
 
 // TEXT DISPLAY FUNCTIONS
+
+function megaPokemonName(pokemonNameArray) {
+  if (pokemonNameArray.length > 2) {                  // if the name is more than 3 words (ex: charizard-mega-x)
+    var last = '-' + pokemonNameArray.pop();          // pop the 3rd word
+  } else {
+    last = '';
+  }
+  var pokemon = pokemonNameArray.shift();             // shift the pokemon name
+  console.log(pokemonNameArray, 'pokemonNameArray')
+  console.log(pokemon, 'pokemon')
+  return pokemonNameArray + '-' + pokemon + last;     // reassemble
+}
+  
 
 function displayGameName(game) {
   var array = game.split(' ');
