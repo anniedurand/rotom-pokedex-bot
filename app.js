@@ -194,7 +194,7 @@ controller.on('facebook_postback', function(bot, message) {
   
   if (onButtonPress === 'evolution-button') {
     bot.reply(message, 'No problem, hold on a second!');
-    evolutionChain(bot, message, pokemonName, pokemonChainUrl, displayName);
+    getEvolutionChain(bot, message, pokemonName, pokemonChainUrl, displayName);
   } 
   else if (onButtonPress === 'search') {
     searchPokemon(bot, message);
