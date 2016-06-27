@@ -510,6 +510,9 @@ function searchPokemon(bot, message) {
           if (chosenPokemon.toLowerCase().indexOf('mega') !== -1) {
             var splitChosenPokemon = chosenPokemon.toLowerCase().split(' ');
             chosenPokemonName = megaPokemonName(splitChosenPokemon);
+          } else if (chosenPokemon.toLowerCase().indexOf('primal') !== -1) {
+            splitChosenPokemon = chosenPokemon.toLowerCase().split(' ');
+            chosenPokemonName = megaPokemonName(splitChosenPokemon);
           } else {
             chosenPokemonName = reverseSplitJoin(chosenPokemon.toLowerCase());
           }
@@ -644,7 +647,7 @@ function displayFoundPokemon(bot, message, foundPokemon, pokemonName, entry_numb
               isBaby = ' [baby]';
             } 
             else if (isSpecial === true) {
-              displaySpecial = ' \u2606 special \u2606';
+              displaySpecial = ' [\u2606special\u2606]';
             }
             
             var pokemonInfo = JSON.parse(result.body);
@@ -986,8 +989,7 @@ function botSayEvolution(bot, message, displayName, evolutionInfos, evoLevelTwoA
         
         evoLevelThreeArray.forEach(function(pokemon) {
           var evolved = capitalizeFirst(splitJoin(pokemon.species.name));
-          var details = pokemon.evolution_details; 
-          
+          var details = pokemon.evolution_details;
           sayEvolutionTriggers(bot, message, convo, details, current, evolved, evolutionInfos, displayName, availableLocationsArray);
         });
         convo.say({attachment: newSearchMenu});
@@ -1004,18 +1006,64 @@ function botSayEvolution(bot, message, displayName, evolutionInfos, evoLevelTwoA
         convo.say(displayName + ' is at its final evolution stage.' + megaDisplay + primalDisplay);
         convo.say({attachment: newSearchMenu});
       }
-      
+      // if searched pokemon is a mega evolution
       else if (current.indexOf('mega') !== -1) {
         var pokemon = current.split('-');
+        var megaEvolvedFrom = null;
+        
         mega.forEach(function(megaPok) { 
-          if (megaPok.indexOf(pokemon) !== -1) {
-            convo.say(capitalizeFirst(splitJoin(first)) + ' \u21e8' + beautifyWordsArrays(secondLevel) + ' \u21e8' + beautifyWordsArrays(thirdLevel) + megaChain + primalChain);
-            convo.say(displayName + ' is a mega evolution.');
+          if (megaPok.indexOf(pokemon[0]) !== -1) {
+            if (thirdLevel.indexOf(pokemon[0]) !== -1) {
+              megaEvolvedFrom = capitalizeFirst(pokemon[0]);
+            } else if (secondLevel.indexOf(pokemon[0]) !== -1) {
+              megaEvolvedFrom = capitalizeFirst(pokemon[0]);
+            } else if (first.indexOf(pokemon[0]) !== -1) {
+              megaEvolvedFrom = capitalizeFirst(pokemon[0]);
+            }
           }
         });
-      } 
+        
+        if (secondLevel.length > 0 && thirdLevel.length === 0) {
+          convo.say(capitalizeFirst(splitJoin(first)) + ' \u21e8' + beautifyWordsArrays(secondLevel) + megaChain + primalChain); 
+        } else if (secondLevel.length > 0 && thirdLevel.length > 0) {
+          convo.say(capitalizeFirst(splitJoin(first)) + ' \u21e8' + beautifyWordsArrays(secondLevel) + ' \u21e8' + beautifyWordsArrays(thirdLevel) + megaChain + primalChain);
+        } else {
+          convo.say(capitalizeFirst(splitJoin(first)) + megaChain + primalChain);
+        }
+        
+        convo.say(displayName + ' is the mega evolution of ' + megaEvolvedFrom);
+        convo.say({attachment: newSearchMenu});
+      }
+      // if searched pokemon is a primal reversion
+      else if (current.indexOf('primal') !== -1) {
+        pokemon = current.split('-');
+        var primalRevFrom = null;
+        
+        primal.forEach(function(primalPok) { 
+          if (primalPok.indexOf(pokemon[0]) !== -1) {
+            if (thirdLevel.indexOf(pokemon[0]) !== -1) {
+              primalRevFrom = capitalizeFirst(pokemon[0]);
+            } else if (secondLevel.indexOf(pokemon[0]) !== -1) {
+              primalRevFrom = capitalizeFirst(pokemon[0]);
+            } else if (first.indexOf(pokemon[0]) !== -1) {
+              primalRevFrom = capitalizeFirst(pokemon[0]);
+            }
+          }
+        });
+        
+        if (secondLevel.length > 0 && thirdLevel.length === 0) {
+          convo.say(capitalizeFirst(splitJoin(first)) + ' \u21e8' + beautifyWordsArrays(secondLevel) + megaChain + primalChain); 
+        } else if (secondLevel.length > 0 && thirdLevel.length > 0) {
+          convo.say(capitalizeFirst(splitJoin(first)) + ' \u21e8' + beautifyWordsArrays(secondLevel) + ' \u21e8' + beautifyWordsArrays(thirdLevel) + megaChain + primalChain);
+        } else {
+          convo.say(capitalizeFirst(splitJoin(first)) + megaChain + primalChain);
+        }
+        
+        convo.say(displayName + ' is the primal reversion of ' + primalRevFrom);
+        convo.say({attachment: newSearchMenu});
+      }
+      
       else {
-        console.log('ass')
         bot.reply(message, 'there was an error: ' + err);
         return;
       }
