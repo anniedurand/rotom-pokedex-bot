@@ -48,7 +48,6 @@ That information is saved in a global object with the user's Messenger ID as a k
 
 ## <a name="5">What it currently cannot do</a>
 
-* Find or display special / Mega Pokémon
 * Display how / where to get evolution triggering items
 * Display encounter locations per Pokémon
 
