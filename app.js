@@ -561,7 +561,7 @@ function searchPokemon(bot, message) {
                   }
                 });
                 
-                if (foundPokemon === null) {
+                if (foundPokemon === null && chosenPokemonName.indexOf('mega') !== -1 || chosenPokemonName.indexOf('primal') !== -1) {
                   pokemonList.forEach(function(listedPokemon) {
                     if (listedPokemon.name.indexOf(chosenPokemonName) !== -1) {
                       foundPokemon = listedPokemon.url;
@@ -575,8 +575,22 @@ function searchPokemon(bot, message) {
               if (foundPokemon === null) {
                 bot.startConversation(message, function(err, convo) {
                   if (!err) {
-                    convo.say('Sorry, I couldn\'t find the Pokémon that you requested.');
-                    convo.say({attachment: mainMenu});
+                    var exists = false;
+                    pokemonList.forEach(function(pokemon) {
+                      if (pokemon.name.indexOf(chosenPokemonName) !== -1) {
+                        exists = true;
+                      }
+                    })
+                    console.log(chosenPokemonName)
+                    
+                    if (exists === true) {
+                      convo.say('The Pokémon that you requested exists but cannot be found in your current game version / Pokédex. Try searching in the National Pokédex instead!');
+                      convo.say({attachment: mainMenu});
+                    } else {
+                      console.log('woo')
+                      convo.say('Sorry, I couldn\'t find the Pokémon that you requested.');
+                      convo.say({attachment: mainMenu});
+                    }
                   } else {
                     bot.reply(message, 'error'); // verify
                     return;
@@ -1465,7 +1479,7 @@ function reverseSplitJoin(sentence) {
 
 // TO DO LIST:
 /* 
-  - if pokemon exists but not in current game, throw different messages (sorry pokemon not available in current game ver) / remove pokemon from evolution chain? 
+  - if pokemon exists but not in current game, remove pokemon from evolution chain? 
   - controller.hears for everything else that is not a command and bring up the main menu?
   - postback problems on mobile ? 
   - cancel middleware function?
