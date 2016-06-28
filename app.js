@@ -314,16 +314,25 @@ controller.hears(['^hello$', '^hi$', '^yo$', '^hey$', 'what\'s up'], 'message_re
 controller.hears('^help$', 'message_received', sendHelp);
   
 function sendHelp(bot, message) {
-  bot.startConversation(message, function(err, convo) {
-    if (!err) {
-      convo.say('I heard that you want to know more about me? :) \nI am a bot made to assist Pokémon trainers like you, on a quest to catch \'em all! \n\nI can find any Pokémon through any Pokédex of a given game, and tell you about its evolution trigger and conditions. I can also tell you what type is good against another.');
-      convo.say('All my functions are available through my main menu. Though you can also call them by saying things like "pokemon", "pokedex", "type". \n\nYou can also always bring up the main menu by greeting me. If you need a reminder, don\'t hesitate to say "help"!');
-      convo.say({attachment: mainMenu});
-    } else {
-      bot.reply(message, 'error'); // verify
-      return;
-    }
-  });
+  var convoArray = ['I heard that you want to know more about me? :) \nI am a bot made to assist Pokémon trainers like you, on a quest to catch \'em all! ☺', 'I can find any Pokémon through any Pokédex of a given game, and tell you about its evolution trigger and conditions. When prompted for a Pokémon, try to say "Squirtle" or "Pikachu" ❤️, for example. Or any number between 1 and 721!', 'I can also tell you what type is good against another. Try searching for types like "fire", "psychic" or "electric"! ⚡ \n\nKeep in mind that I understand only the English version of the Pokémon names and types.', 'All my functions are available through my main menu. Though you can also call them by saying things like "pokemon" or "type". \n\nGreeting me will bring up the main menu as well. ☎ If you need a reminder, don\'t hesitate to say "help"! ☺', {attachment: mainMenu}]
+
+  bot.reply(message, convoArray[0]);
+  
+  setTimeout(function() {
+    bot.reply(message, convoArray[1]);
+  }, 4000)
+  
+  setTimeout(function() {
+    bot.reply(message, convoArray[2]);
+  }, 12000)
+  
+  setTimeout(function() {
+    bot.reply(message, convoArray[3]);
+  }, 19000)
+  
+  setTimeout(function() {
+    bot.reply(message, convoArray[4]);
+  }, 25000)
 }
 
 
