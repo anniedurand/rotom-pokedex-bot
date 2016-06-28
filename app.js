@@ -213,13 +213,15 @@ controller.on('facebook_postback', function(bot, message) {
     getType(bot, message);
   } 
   else if (onButtonPress === 'pokedexmenu') {
-    if (userPokedex[message.user]) {
-      var name = userPokedex[message.user][0].name;
-      bot.reply(message, 'You are currently using the Pokédex for Pokémon ' + displayGameName(currentGameName) + ': ' + capitalizeFirst(splitJoin(name)) + '.');
-    } else {
-      bot.reply(message, 'You are currently using the National Pokédex.');
-    }
-    bot.reply(message, {attachment: pokedexMenu});
+    bot.startConversation(message, function(err, convo) {
+      if (!err) {
+        stateCurrentPokedex(bot, message, convo);
+        convo.say({attachment: pokedexMenu});
+      } else {
+        console.log('there was an error: ' + err); // verify
+        return;
+      }
+    });
   }
   else if (onButtonPress === 'set-pokedex') {
     findGame(bot, message);
@@ -279,7 +281,24 @@ controller.on('facebook_postback', function(bot, message) {
 });
 
 
-// HELLO
+// SAY CURRENT POKEDEX
+
+function stateCurrentPokedex(bot, message, convo) {
+  var currentGameName = null;
+  if (userCurrentGame[message.user]) {
+    currentGameName = userCurrentGame[message.user].name.split('-').join(' ');
+  }
+  
+  if (userPokedex[message.user]) {
+    var name = userPokedex[message.user][0].name;
+    convo.say('You are currently using the Pokédex for Pokémon ' + displayGameName(currentGameName) + ': ' + capitalizeFirst(splitJoin(name)) + '.');
+  } else {
+    convo.say('You are currently using the National Pokédex.');
+  }
+}
+
+
+// HELLO FUNCTION
 
 var userFirstRun = {};
 
@@ -289,6 +308,7 @@ controller.hears(['^hello$', '^hi$', '^yo$', '^hey$', 'what\'s up'], 'message_re
     bot.startConversation(message, function(err, convo) {
       if (!err) {
         convo.say('Hey there, Pokémon trainer. :) Nice to meet you! I am your assistant Pokédex. Feel free to browse through my menus, or say "help" if you want to know more!');
+        stateCurrentPokedex(bot, message, convo);
         convo.say({attachment: mainMenu});
       } else {
         bot.reply(message, 'error'); // verify
@@ -299,6 +319,7 @@ controller.hears(['^hello$', '^hi$', '^yo$', '^hey$', 'what\'s up'], 'message_re
     bot.startConversation(message, function(err, convo) {
       if (!err) {
         convo.say('Hello, nice to see you again! :)');
+        stateCurrentPokedex(bot, message, convo);
         convo.say({attachment: mainMenu});
       } else {
         bot.reply(message, 'error'); // verify
